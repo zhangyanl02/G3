@@ -2,73 +2,29 @@
       subroutine hillslope_model(isub)
         implicit none
 !       include 'dims2.inc'
-        character*6   subbasin(nc)      ! name of sub-basin ! changed by gaobing 2013
-        integer       nsub              ! total number of sub-basins
-        integer       psubbasin(nc)
-        integer       nbasinup(nc,4)    !  added by gaobing 2013
+        
+
+
         integer       isub              ! sub-basin number
         integer       i_sub             ! sub-basin number 
-        real area(nrow,ncol)     ! area of the local grid (m2)
-        real slp(nrow,ncol)      ! average slope of the local grid (ND)
-        real length(nrow,ncol)   ! average hillslope length (m)
-        real Ds(nrow,ncol)       ! average depth of the topsoil (m)
-        real Dg(nrow,ncol)       ! average depth of the uncinfined acwuifer (m)
-        integer nflow(nc)        ! total number of flow-intervals in a sub-basin
         integer iflow            ! flow-interval number
-        real    dx(nc,nx)        ! flow interval length (m)
-        real    Dr(nc,nx)        ! river depth in the flow interval (m)
-        real    s0(nc,nx)        ! slope of river bed (ND)
-        real    b(nc,nx)         ! width of river (m)
-        real    roughness(nc,nx) ! Manning's roughness
-        integer ngrid(nc,nx)       ! number of grids in this flow-interval
-        integer grid_row(nc,nx,np) ! row of grids in this flow-interval
-        integer grid_col(nc,nx,np) ! column of grids in this flow-interval
-        real rain_daily(nrow,ncol,31)  ! daily precipitaiton (mm)
-        real pre_hour(nrow,ncol,31,24)
-        real tmin_daily(nrow,ncol,31)  ! daily minimum air temperature (degree)
-        real tmax_daily(nrow,ncol,31)  ! daily minimum air temperature (degree)
-        real evap_daily(nrow,ncol,31,nv) !daily value of potential evaporation(mm)
-        real snow(nrow,ncol,nv)        ! snow depth (mm water) of the initial year
         real smf                        ! snow melting factor
-        integer soiltyp(ns)              ! Soil type of the whole area
-        integer landtyp(nv)              ! landuse type of the whole area
-        integer soil(nrow, ncol)         ! soil code of each grid
-        real land_ratio(nrow,ncol,nv)    ! Area fraction of each landuse type
-        integer land_use(nrow*10,ncol*10,1)
         integer nsoil                    ! number of soil types in whole area
         integer isoil                    ! soil number
         integer nland                    ! number of landuse types in whole area
         integer iland                    ! land-use number
 
-        real    NDVI(nrow,ncol,12,3)    ! monthly NDVI
-        real    yndvi(nrow,ncol,12,3) ! spot NDVI
-        real    LAI(nrow,ncol,12,4)     ! monthly LAI
-        real    Kcanopy(nv)           ! vegetation coverage of a landuse type
-        real    LAImax(nv)            ! maximum LAI in a year
-        real    root(nv)              ! root depth (m)
-        real    anik(nv)              ! soil anisotropy ratio 
-        real    Sstmax(nv)            ! maximum surface water detension (mm)
-        real    surfn(nv)             ! surface roughness (Manning's coefficient)
-        real    kcrop(nv)             ! evaporation coefficient of crop
         real    kmoist                ! evaporation coefficient of soil mositure  
-        real    wsat(nrow,ncol)              ! saturated soil moisture
-        real    wrsd(nrow,ncol)                ! residual soil moisture 
-        real    wfld(nrow,ncol)            ! soil moisture at field capacity
-        real    alpha(nrow,ncol)              ! soil water parameter
-        real    watern(nrow,ncol)                ! soil water parameter
-        real    ksat1(nrow,ncol)        ! saturated hydraulic conductivity at surface (mm/h)
-        real    ksat2(nrow,ncol)     ! saturated hydraulic conductivity at bottom (mm/h)
         real    soil_con_f       ! soil water conservation factor
         real    detension        ! surface detension (mm)
         real    detension2  !MQH
-        real    Qh(nc,8800)     ! hourly mean discharge (m3/s)
-        common /qh/ qh   !mqh
+
+
         real    dt             ! time step (second)
         integer year           ! calendar year   (19XX)
         integer month          ! month in a year (1-12)
         integer day            ! day in a month  (1-30)
         integer hour           ! hour in a day   (1-24)
-        integer dayinmonth(12) ! days of a month
         integer hydroyear      ! year for hydro simulation
         integer startmonth     ! start month in the hydro-year
         integer endmonth       ! end   month in the hydro-year
@@ -78,7 +34,7 @@
         integer ihc            ! contineous hour in a year (1-366*24)
         integer start, finish  ! 0 - faulse,    1 - true
         integer start_sub, end_sub  ! for partial simulation of a basin
-        integer layer(nrow,ncol)   ! number of UZ layer
+
         real      D(nrow,ncol,nlayer)    ! depth of each UZ layer(m)
         real      k0(nrow,ncol,nlayer)   ! saturated hydraulic conductivity (mm/hr)
         real      w(nrow,ncol,nv,nlayer) ! soil moisture

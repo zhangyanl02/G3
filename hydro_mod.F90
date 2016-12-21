@@ -34,6 +34,70 @@
       real(r8)::total_rech,total_qsub,total_ssub                      !added by mqh ,2014.4.24
       integer(i4)::year,month2,day,hour,idc,ihc
       
+      character*6,allocatable::subbasin(:)                  ! name of each sub catchment                                         ----subbasin(nc)
+      integer(i4),allocatable::psubbasin(:)                 ! the ids of sub catchments,e.g., 1001,2003                          ----psubbasin
+      integer(i4),allocatable::nbasinup(:,:)                ! the rank of each up-basin of each sub catchment, e.g., 1,2,3,4     ----nbasinup(nc,8)
+      real(r8),allocatable::   area(:,:)                    ! area of the local grid (m2)------               area(nrow,ncol)
+      real(r8),allocatable::   slp(:,:)               ! average slope of the local grid (ND)            slp(nrow,ncol)
+      real(r8),allocatable::   length(:,:)   ! average hillslope length (m)        length(nrow,ncol)
+      real(r8),allocatable::   Ds(:,:)       ! average depth of the topsoil (m)    Ds(nrow,ncol)
+      real(r8),allocatable::   Dg(:,:)       ! average depth of the uncinfined acwuifer (m)     Dg(nrow,ncol)
+      integer(i4),allocatable::nflow(:)                      ! total number of flow-intervals in a sub-basin    nflow(nc)
+      real(r8),allocatable::dx(:,:)                          ! (rdx) length of flow intervals (m)                          ----dx(nsub,nflow)
+      real(r8),allocatable::dr(:,:)                          ! (drr) river depth of the flow interval (m)                  ----dr(nsub,nflow)
+      real(r8),allocatable::s0(:,:)                          ! river-bed slope of the flow interval                        ----s0(nsub,nflow)
+      real(r8),allocatable::b(:,:)                           ! (riverb) river width of the flow interval (m)               ----b(nsub,nflow)
+      real(r8),allocatable::roughness(:,:)                   ! river roughness (manning's coefficient) of the flow interval----(nsub,nflow)
+      integer(i4),allocatable::ngrid(:,:)                    ! the number of grid in each flow interval                    ----ngrid(nsub,nflow)
+      integer(i4),allocatable::grid_row(:,:,:)               ! the row number of each grid                                 ----grid_row(nsub,nflow,ngrid)
+      integer(i4),allocatable::grid_col(:,:,:)               ! the col number of each grid                                 ----grid_col(nsub,nflow,ngrid)
+      
+      
+      real(r8),allocatable::rain_daily(:,:,:)  ! daily precipitaiton (mm)     rain_daily(nrow,ncol,31)
+      real(r8),allocatable:: pre_hour(:,:,:,:)                  !pre_hour(nrow,ncol,31,24)
+      real(r8),allocatable:: tmin_daily(:,:,:)  ! daily minimum air temperature (degree)         tmin_daily(nrow,ncol,31)
+      real(r8),allocatable:: tmax_daily(:,:,:)  ! daily minimum air temperature (degree)    tmax_daily(nrow,ncol,31)
+      real(r8),allocatable:: evap_daily(:,:,:,:) !daily value of potential evaporation(mm)    evap_daily(nrow,ncol,31,nv)
+      real(r8),allocatable:: snow(:,:,:)        ! snow depth (mm water) of the initial year      snow(nrow,ncol,nv)
+      integer(i4),allocatable::soiltyp(:)              ! Soil type of the whole area       soiltyp(ns)
+      integer(i4),allocatable:: landtyp(:)              ! landuse type of the whole area   landtyp(nv)
+      integer(i4),allocatable:: soil(:, :)         ! soil code of each grid   oil(nrow, ncol)
+      real(r8),allocatable:: land_ratio(:,:,:)    ! Area fraction of each landuse type  land_ratio(nrow,ncol,nv)
+      integer(i4),allocatable:: land_use(:,:,:)    !land_use(nrow*10,ncol*10,1)
+      
+      
+      
+      
+      real(r8),allocatable::    NDVI(:,:,:,:)    ! monthly NDVI     NDVI(nrow,ncol,12,3)
+      real(r8),allocatable::    yndvi(:,:,:,:) ! spot NDVI    yndvi(nrow,ncol,12,3)
+      real(r8),allocatable::    LAI(:,:,:,:)     ! monthly LAI    LAI(nrow,ncol,12,4)
+      real(r8),allocatable::    Kcanopy(:)           ! vegetation coverage of a landuse type   Kcanopy(nv)
+      real(r8),allocatable::    LAImax(:)            ! maximum LAI in a year    LAImax(nv)
+      real(r8),allocatable::    root(:)              ! root depth (m)   root(nv)
+      real(r8),allocatable::    anik(:)              ! soil anisotropy ratio    anik(nv)
+      real(r8),allocatable::    Sstmax(:)            ! maximum surface water detension (mm)     nv
+      real(r8),allocatable::    surfn(:)             ! surface roughness (Manning's coefficient)     nv
+      real(r8),allocatable::    kcrop(:)             ! evaporation coefficient of crop     nv
+      
+      
+      real(r8),allocatable::    wsat(:,:)              ! saturated soil moisture   nrow,ncol
+      real(r8),allocatable::    wrsd(:,:)                ! residual soil moisture    nrow,ncol
+      real(r8),allocatable::    wfld(nrow,ncol)            ! soil moisture at field capacity    nrow,ncol
+      real(r8),allocatable::    alpha(nrow,ncol)              ! soil water parameter     nrow,ncol
+      real(r8),allocatable::    watern(nrow,ncol)                ! soil water parameter    nrow,ncol
+      real(r8),allocatable::    ksat1(nrow,ncol)        ! saturated hydraulic conductivity at surface (mm/h)     nrow,ncol
+      real(r8),allocatable::    ksat2(nrow,ncol)     ! saturated hydraulic conductivity at bottom (mm/h)     nrow,ncol
+      
+      
+      real(r8),allocatable::    Qh(:,:)     ! hourly mean discharge (m3/s)     nc,8800
+      integer(i4):: dayinmonth(12) ! days of a month
+      integer(i4),allocatable:: layer(:,:)   ! number of UZ layer     nrow,ncol
+      real(r8),allocatable::    D(:,:,:)    ! depth of each UZ layer(m)    nrow,ncol,nlayer
+      
+      
+      
+      
+      
       
     contains
     
