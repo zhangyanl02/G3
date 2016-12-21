@@ -243,7 +243,7 @@ module hydro_mod
       do iflow=1,nflow(isub)        ! flow interval loop
         qin(iflow)=  0.0            ! total lateral inflow (m3/s/m)
         qin_tmp   =  0.0            ! lateral inflow from present flow-interval
-        DO ig=1,ngrid(isub,iflow) !grid loop within a flow interval
+        DO ig=1,ngrid(isub,iflow)   ! grid loop within a flow interval
           iy=grid_row(isub,iflow,ig)
           ix=grid_col(isub,iflow,ig)
           qin_inter =  0.0
