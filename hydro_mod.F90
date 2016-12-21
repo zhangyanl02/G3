@@ -12,8 +12,6 @@
       integer(i4)::nv               ! number of landuse types
       integer(i4)::ns               ! number of soil types
       integer(i4)::nlayer           ! number of UZ layers
-      integer(i4)::startyear        ! simulation start
-      integer(i4)::endyear          ! simulation end
       integer(i4)::inicon           ! the way to specify initial condition
                                     !   inicon=1, input initial condition from files in directory ../simulation
                                     !   inicon=0, arbitrarily given in the program
@@ -32,7 +30,19 @@
       !parameter (iflai = 0)        
       
       real(r8)::total_rech,total_qsub,total_ssub                      !added by mqh ,2014.4.24
-      integer(i4)::year,month2,day,hour,idc,ihc
+      integer(i4)::year,month2,day,hour,month
+      integer(i4):: idc            ! contineous day in a year (1-366)
+      integer(i4):: ihc            ! contineous hour in a year (1-366*24)
+      integer(i4):: hydroyear      ! year for hydro simulation
+      integer(i4):: startmonth     ! start month in the hydro-year
+      integer(i4):: startday       ! start day in the first month of the hydro-year
+      integer(i4):: endday         ! end   day in the last  month of the hydro-year
+      integer(i4):: endmonth       ! end   month in the hydro-year
+      integer(i4)::startyear        ! simulation start
+      integer(i4)::endyear          ! simulation end
+      integer(i4):: start, finish  ! 0 - faulse,    1 - true
+      integer(i4):: start_sub, end_sub  ! for partial simulation of a basin
+      real(r8)::    dt             ! time step (second)
       
       character*6,allocatable::subbasin(:)                  ! name of each sub catchment                                         ----subbasin(nc)
       integer(i4),allocatable::psubbasin(:)                 ! the ids of sub catchments,e.g., 1001,2003                          ----psubbasin
@@ -51,7 +61,8 @@
       integer(i4),allocatable::ngrid(:,:)                    ! the number of grid in each flow interval                    ----ngrid(nsub,nflow)
       integer(i4),allocatable::grid_row(:,:,:)               ! the row number of each grid                                 ----grid_row(nsub,nflow,ngrid)
       integer(i4),allocatable::grid_col(:,:,:)               ! the col number of each grid                                 ----grid_col(nsub,nflow,ngrid)
-      
+      real(r8),allocatable::   subarea(:)    ! total basin area     nc
+      real(r8)::basinarea,fice, area_frac
       
       real(r8),allocatable::rain_daily(:,:,:)  ! daily precipitaiton (mm)     rain_daily(nrow,ncol,31)
       real(r8),allocatable:: pre_hour(:,:,:,:)                  !pre_hour(nrow,ncol,31,24)
@@ -64,8 +75,8 @@
       integer(i4),allocatable:: soil(:, :)         ! soil code of each grid   oil(nrow, ncol)
       real(r8),allocatable:: land_ratio(:,:,:)    ! Area fraction of each landuse type  land_ratio(nrow,ncol,nv)
       integer(i4),allocatable:: land_use(:,:,:)    !land_use(nrow*10,ncol*10,1)
-      
-      
+      integer(i4):: nsoil                    ! number of soil types in whole area
+      integer(i4):: nland                    ! number of landuse types in whole area
       
       
       real(r8),allocatable::    NDVI(:,:,:,:)    ! monthly NDVI     NDVI(nrow,ncol,12,3)
@@ -93,12 +104,73 @@
       integer(i4):: dayinmonth(12) ! days of a month
       integer(i4),allocatable:: layer(:,:)   ! number of UZ layer     nrow,ncol
       real(r8),allocatable::    D(:,:,:)    ! depth of each UZ layer(m)    nrow,ncol,nlayer
+      real(r8),allocatable::    k0(:,:,:)   ! saturated hydraulic conductivity (mm/hr)   nrow,ncol,nlayer
+      real(r8),allocatable::    w(:,:,:,:) ! soil moisture     nrow,ncol,nv,nlayer
+      real(r8),allocatable::    qin(:)             ! lateral inflow into river    nflow
+      real(r8),allocatable::    kg(:,:)          ! hydraulic conductivity of groundwater (m/sec)    nrow,ncol
+      real(r8),allocatable::    GWcs(:,:)            ! groundwater storage coefficient       nrow,ncol
+      real(r8),allocatable::    Cstmax(:,:,:)          ! maximal canopy storage     nrow,ncol,nv
+      real(r8),allocatable::    Cst(:,:,:)                  ! canopy storage     nrow,ncol,nv
+      real(r8),allocatable::    Sst(:,:,:)                  ! surface storage   nrow,ncol,nv
+      real(r8),allocatable::    Dgl(:,:,:)               ! depth to groundwater level in the grid    nrow,ncol,nv
+      real(r8),allocatable::    GWst(:,:,:)              !   nrow,ncol,nv
+      real(r8),allocatable::    Drw(:,:)          ! river water depth   nsub,nflow
+      real(r8),allocatable::    discharge(:,:)    ! river flow discharge   nsub,nflow
+      
+      real(r8),allocatable::    raind(:,:,:)       ! daily rainfall (mm)   nrow,ncol,366
+      real(r8),allocatable::    epd(:,:,:)         ! daily potential evaporation (mm)   nrow,ncol,366
+      real(r8),allocatable::    eactd(:,:,:)       ! daily actual evapotranspiration (mm)   nrow,ncol,366
+      real(r8),allocatable::    ecy(:,:,:)           !nrow,ncol,366
+      real(r8),allocatable::    ecp(:,:,:)    !nrow,ncol,366
+      real(r8),allocatable::    ese(:,:,:)   !nrow,ncol,366
+      real(r8),allocatable::    runoffd(:,:,:)     ! daily runoff (mm)  !nrow,ncol,366
+      real(r8),allocatable::    srunoff(:,:,:)   !nrow,ncol,366
+      real(r8),allocatable::    groundoff(:,:,:)   !nrow,ncol,366
+      real(r8),allocatable::    soiloff(:,:,:)   !nrow,ncol,366
+      
+      real(r8),allocatable:: srunoff2(:,:)   !mqh £¬²»Í¬²úÁ÷    nc,8800
+      real(r8),allocatable:: groundoff2(:,:)    !nc,8800
+      real(r8),allocatable:: soiloff2(:,:)     nc,8800
+      real(r8):: annual_rain        ! annual precipitation 
+      real(r8):: annual_runoff      ! annual runoff
+      real(r8):: annual_Eact        ! annual actual evaporation
+      real(r8):: annual_Ecy
+      real(r8):: annual_Ecp
+      real(r8):: annual_Ese
+      real(r8):: annual_Cst         ! annual canopy interception
+      real(r8):: annual_Ssts        ! annual surface storage(snow)
+      real(r8):: annual_Sstr        ! annual surface storage(rain)
+      real(r8):: annual_SBst        ! annual subsurface storage
+      real(r8):: annual_Gst         ! annual groundwater storage
+      real(r8):: annual_Cst0        ! initial value of annual canopy storage
+      real(r8):: annual_Ssts0       ! initial value of annual surface storage(snow)
+      real(r8):: annual_Sstr0       ! initial value of annual surface storage(rain)
+      real(r8):: annual_SBst0       ! initial value of annual subsurface storage
+      real(r8):: annual_Gst0        ! initial value of groundwater storage
+      
+      real(r8)::     total_rain_d(366)            ! basin mean precipitation
+      real(r8)::     total_Ep_d(366)                  ! basin mean potential evaporation
+      real(r8)::     total_Eact_d(366)            ! basin mean actual evaporation
+      real(r8)::     total_runoff_d(366)            ! basin mean runoff
+      
+      real(r8),allocatable:: evap_month(:,:)      ! monthly mean evaporation    nrow,ncol
+      real(r8),allocatable:: soil_month(:,:)         !nrow,ncol
+      real(r8),allocatable:: runoff_month(:,:)      !nrow,ncol
+      real(r8),allocatable:: grunoff_month(:,:)      !nrow,ncol
+      real(r8),allocatable:: drunoff_month(:,:)      !nrow,ncol
+      real(r8),allocatable:: srunoff_month(:,:)      !nrow,ncol
+      real(r8),allocatable:: ecy_month(:,:)      !nrow,ncol
+      real(r8),allocatable:: ecp_month(:,:)      !nrow,ncol
+      real(r8),allocatable:: ese_month(:,:)      !nrow,ncol
+      
+      
+      integer(i4),allocatable::countt2(:)   !nsub
       
       
       
-      
-      
-      
+      character*200::para_dir    ! directory for parameters
+      character*200::result2_dir ! directory for storing simulation result
+      character*200::simul_dir   ! directory for storing temporal variables
     contains
     
 !      calculate soil hydraulic conductivity by Van Genuchten's equation                                 
