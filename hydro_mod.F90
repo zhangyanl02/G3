@@ -33,7 +33,6 @@
       
       real(r8)::total_rech,total_qsub,total_ssub                      !added by mqh ,2014.4.24
       integer(i4)::year,month2,day,hour,idc,ihc
-      integer(i4)::gittest
       
       
     contains
