@@ -1,16 +1,13 @@
     module GBHM3
-      public
-      save
-      integer,parameter::i4=4
-      integer,parameter::r8=4
+      use global_para_mod,only:i4,r8
       
-      integer(i4)::nrow             ! number of rows of the whole area
-      integer(i4)::ncol             ! number of columns of the whole area
+      public
+      save      
+
       integer(i4)::nsub             ! number of sub-catchments  (nc in dims2.inc)
       integer(i4)::nx               ! number of flow interval in a sub-catchment
       integer(i4)::np               ! number of grids in a flow-interval
       integer(i4)::nv               ! number of landuse types
-      integer(i4)::ns               ! number of soil types
       integer(i4)::nlayer           ! number of UZ layers
       integer(i4)::inicon           ! the way to specify initial condition
                                     !   inicon=1, input initial condition from files in directory ../simulation
@@ -18,7 +15,7 @@
       integer(i4)::MNgauge          ! Number of Gauge          old
       integer(i4)::Maxgauge         ! Max_Number of Gauge      old +new
       integer(i4)::NNstation        ! rain station select; 1 for old, 2 for new, 3 for old+new
-      integer(i4)::iflai            ! 1 for using lai 
+
       !parameter (nrow = 106, ncol = 78)
       !parameter (nc = 153, nx = 300, np = 500)
       !parameter (nv = 9,  ns = 3,  nlayer = 10)
@@ -30,7 +27,6 @@
       !parameter (iflai = 0)        
       
       real(r8)::total_rech,total_qsub,total_ssub                      !added by mqh ,2014.4.24
-      integer(i4)::year,month2,day,hour,month
       integer(i4):: idc            ! contineous day in a year (1-366)
       integer(i4):: ihc            ! contineous hour in a year (1-366*24)
       integer(i4):: hydroyear      ! year for hydro simulation
@@ -44,60 +40,42 @@
       integer(i4):: start_sub, end_sub  ! for partial simulation of a basin
       real(r8)::    dt             ! time step (second)
       
-      character*6,allocatable::subbasin(:)                  ! name of each sub catchment                                         ----subbasin(nc)
-      integer(i4),allocatable::psubbasin(:)                 ! the ids of sub catchments,e.g., 1001,2003                          ----psubbasin
-      integer(i4),allocatable::nbasinup(:,:)                ! the rank of each up-basin of each sub catchment, e.g., 1,2,3,4     ----nbasinup(nc,8)
+
       real(r8),allocatable::   area(:,:)                    ! area of the local grid (m2)------               area(nrow,ncol)
       real(r8),allocatable::   slp(:,:)               ! average slope of the local grid (ND)            slp(nrow,ncol)
       real(r8),allocatable::   length(:,:)   ! average hillslope length (m)        length(nrow,ncol)
       real(r8),allocatable::   Ds(:,:)       ! average depth of the topsoil (m)    Ds(nrow,ncol)
       real(r8),allocatable::   Dg(:,:)       ! average depth of the uncinfined acwuifer (m)     Dg(nrow,ncol)
-      integer(i4),allocatable::nflow(:)                      ! total number of flow-intervals in a sub-basin    nflow(nc)
+
       real(r8),allocatable::dx(:,:)                          ! (rdx) length of flow intervals (m)                          ----dx(nsub,nflow)
       real(r8),allocatable::dr(:,:)                          ! (drr) river depth of the flow interval (m)                  ----dr(nsub,nflow)
       real(r8),allocatable::s0(:,:)                          ! river-bed slope of the flow interval                        ----s0(nsub,nflow)
       real(r8),allocatable::b(:,:)                           ! (riverb) river width of the flow interval (m)               ----b(nsub,nflow)
       real(r8),allocatable::roughness(:,:)                   ! river roughness (manning's coefficient) of the flow interval----(nsub,nflow)
-      integer(i4),allocatable::ngrid(:,:)                    ! the number of grid in each flow interval                    ----ngrid(nsub,nflow)
-      integer(i4),allocatable::grid_row(:,:,:)               ! the row number of each grid                                 ----grid_row(nsub,nflow,ngrid)
-      integer(i4),allocatable::grid_col(:,:,:)               ! the col number of each grid                                 ----grid_col(nsub,nflow,ngrid)
+
       real(r8),allocatable::   subarea(:)    ! total basin area     nc
       real(r8)::basinarea,fice, area_frac
       
-      real(r8),allocatable::rain_daily(:,:,:)  ! daily precipitaiton (mm)     rain_daily(nrow,ncol,31)
+      real(r8),allocatable:: rain_daily(:,:,:)  ! daily precipitaiton (mm)     rain_daily(nrow,ncol,31)
       real(r8),allocatable:: pre_hour(:,:,:,:)                  !pre_hour(nrow,ncol,31,24)
       real(r8),allocatable:: tmin_daily(:,:,:)  ! daily minimum air temperature (degree)         tmin_daily(nrow,ncol,31)
       real(r8),allocatable:: tmax_daily(:,:,:)  ! daily minimum air temperature (degree)    tmax_daily(nrow,ncol,31)
       real(r8),allocatable:: evap_daily(:,:,:,:) !daily value of potential evaporation(mm)    evap_daily(nrow,ncol,31,nv)
       real(r8),allocatable:: snow(:,:,:)        ! snow depth (mm water) of the initial year      snow(nrow,ncol,nv)
-      integer(i4),allocatable::soiltyp(:)              ! Soil type of the whole area       soiltyp(ns)
-      integer(i4),allocatable:: landtyp(:)              ! landuse type of the whole area   landtyp(nv)
-      integer(i4),allocatable:: soil(:, :)         ! soil code of each grid   oil(nrow, ncol)
-      real(r8),allocatable:: land_ratio(:,:,:)    ! Area fraction of each landuse type  land_ratio(nrow,ncol,nv)
-      integer(i4),allocatable:: land_use(:,:,:)    !land_use(nrow*10,ncol*10,1)
-      integer(i4):: nsoil                    ! number of soil types in whole area
-      integer(i4):: nland                    ! number of landuse types in whole area
+
+
+
+
       
       
-      real(r8),allocatable::    NDVI(:,:,:,:)    ! monthly NDVI     NDVI(nrow,ncol,12,3)
-      real(r8),allocatable::    yndvi(:,:,:,:) ! spot NDVI    yndvi(nrow,ncol,12,3)
-      real(r8),allocatable::    LAI(:,:,:,:)     ! monthly LAI    LAI(nrow,ncol,12,4)
-      real(r8),allocatable::    Kcanopy(:)           ! vegetation coverage of a landuse type   Kcanopy(nv)
-      real(r8),allocatable::    LAImax(:)            ! maximum LAI in a year    LAImax(nv)
-      real(r8),allocatable::    root(:)              ! root depth (m)   root(nv)
-      real(r8),allocatable::    anik(:)              ! soil anisotropy ratio    anik(nv)
+
+
       real(r8),allocatable::    Sstmax(:)            ! maximum surface water detension (mm)     nv
       real(r8),allocatable::    surfn(:)             ! surface roughness (Manning's coefficient)     nv
       real(r8),allocatable::    kcrop(:)             ! evaporation coefficient of crop     nv
       
       
-      real(r8),allocatable::    wsat(:,:)              ! saturated soil moisture   nrow,ncol
-      real(r8),allocatable::    wrsd(:,:)                ! residual soil moisture    nrow,ncol
-      real(r8),allocatable::    wfld(nrow,ncol)            ! soil moisture at field capacity    nrow,ncol
-      real(r8),allocatable::    alpha(nrow,ncol)              ! soil water parameter     nrow,ncol
-      real(r8),allocatable::    watern(nrow,ncol)                ! soil water parameter    nrow,ncol
-      real(r8),allocatable::    ksat1(nrow,ncol)        ! saturated hydraulic conductivity at surface (mm/h)     nrow,ncol
-      real(r8),allocatable::    ksat2(nrow,ncol)     ! saturated hydraulic conductivity at bottom (mm/h)     nrow,ncol
+
       
       
       real(r8),allocatable::    Qh(:,:)     ! hourly mean discharge (m3/s)     nc,8800
@@ -109,15 +87,13 @@
       real(r8),allocatable::    qin(:)             ! lateral inflow into river    nflow
       real(r8),allocatable::    kg(:,:)          ! hydraulic conductivity of groundwater (m/sec)    nrow,ncol
       real(r8),allocatable::    GWcs(:,:)            ! groundwater storage coefficient       nrow,ncol
-      real(r8),allocatable::    Cstmax(:,:,:)          ! maximal canopy storage     nrow,ncol,nv
-      real(r8),allocatable::    Cst(:,:,:)                  ! canopy storage     nrow,ncol,nv
-      real(r8),allocatable::    Sst(:,:,:)                  ! surface storage   nrow,ncol,nv
-      real(r8),allocatable::    Dgl(:,:,:)               ! depth to groundwater level in the grid    nrow,ncol,nv
-      real(r8),allocatable::    GWst(:,:,:)              !   nrow,ncol,nv
+      real(r8),allocatable::    Cst(:,:,:)           ! canopy storage     nrow,ncol,nv
+      real(r8),allocatable::    Sst(:,:,:)           ! surface storage   nrow,ncol,nv
+      real(r8),allocatable::    Dgl(:,:,:)           ! depth to groundwater level in the grid    nrow,ncol,nv
+      real(r8),allocatable::    GWst(:,:,:)          !   nrow,ncol,nv
       real(r8),allocatable::    Drw(:,:)          ! river water depth   nsub,nflow
-      real(r8),allocatable::    discharge(:,:)    ! river flow discharge   nsub,nflow
-      
-      real(r8),allocatable::    raind(:,:,:)       ! daily rainfall (mm)   nrow,ncol,366
+      real(r8),allocatable::    discharge(:,:)    ! river flow discharge   nsub,nflow      
+
       real(r8),allocatable::    epd(:,:,:)         ! daily potential evaporation (mm)   nrow,ncol,366
       real(r8),allocatable::    eactd(:,:,:)       ! daily actual evapotranspiration (mm)   nrow,ncol,366
       real(r8),allocatable::    ecy(:,:,:)           !nrow,ncol,366
@@ -126,11 +102,11 @@
       real(r8),allocatable::    runoffd(:,:,:)     ! daily runoff (mm)  !nrow,ncol,366
       real(r8),allocatable::    srunoff(:,:,:)   !nrow,ncol,366
       real(r8),allocatable::    groundoff(:,:,:)   !nrow,ncol,366
-      real(r8),allocatable::    soiloff(:,:,:)   !nrow,ncol,366
+
       
       real(r8),allocatable:: srunoff2(:,:)   !mqh £¬²»Í¬²úÁ÷    nc,8800
       real(r8),allocatable:: groundoff2(:,:)    !nc,8800
-      real(r8),allocatable:: soiloff2(:,:)     nc,8800
+
       real(r8):: annual_rain        ! annual precipitation 
       real(r8):: annual_runoff      ! annual runoff
       real(r8):: annual_Eact        ! annual actual evaporation
@@ -153,9 +129,9 @@
       real(r8)::     total_Eact_d(366)            ! basin mean actual evaporation
       real(r8)::     total_runoff_d(366)            ! basin mean runoff
       
-      real(r8),allocatable:: evap_month(:,:)      ! monthly mean evaporation    nrow,ncol
+      real(r8),allocatable:: evap_month(:,:)         ! monthly mean evaporation    nrow,ncol
       real(r8),allocatable:: soil_month(:,:)         !nrow,ncol
-      real(r8),allocatable:: runoff_month(:,:)      !nrow,ncol
+      real(r8),allocatable:: runoff_month(:,:)       !nrow,ncol
       real(r8),allocatable:: grunoff_month(:,:)      !nrow,ncol
       real(r8),allocatable:: drunoff_month(:,:)      !nrow,ncol
       real(r8),allocatable:: srunoff_month(:,:)      !nrow,ncol
@@ -849,30 +825,44 @@
 
 
 !    Sub-program -- downscaling forcing data daily -> hourly
-      subroutine rain_model(isub, ir, ic, idh, month,rain_daily, tmin_daily, &
-           tmax_daily, evap_daily,r, T, Ep, iland)
+      subroutine rain_model(nrow,ncol,isub,ir,ic,iland,idh,rain_daily, tmin_daily, &
+           tmax_daily, evap_daily,r,T,Ep)
         implicit none
-        integer(i4)::isub, ir, ic, iland, month
-        integer(i4)::idh, tmd
+        integer(i4),intent(in)::isub, ir, ic, iland,nrow,ncol
+        integer(i4),intent(in)::idh
+        real(r8),intent(in):: rain_daily
+        real(r8),intent(in)::tmin_daily, tmax_daily, evap_daily
+        real(r8),intent(inout):: r, T, Ep
+                
         integer(i4)::rt0(nrow,ncol)
-        real(r8):: rain_daily, tmin_daily, tmax_daily, evap_daily
-        real(r8):: r, T, Ep
         real(r8)::tmp
-        integer(i4)::idum
+        integer(i4)::idum, tmd
+
+
+        if(evap_daily.lt.0.0) then
+          print *,"daily ET is less than 0",isub,ir,ic,evap_daily
+          stop
+        end if
+        if(tmin_daily.eq.-9999) then
+          print *,"min temperature is  -9999",isub,ir,ic,tmin_daily
+          stop
+        end if
+        if(tmax_daily.eq.-9999) then
+          print *,"max temperature is  -9999",isub,ir,ic,tmax_daily
+          stop
+        end if
 !------------------------ create the start time ------------
         if(idh .eq. 1 .and. iland.eq.1) then
           tmp = ran0(idum)
           rt0(ir,ic) = 4 + int((21-4)*tmp+0.45)
           if(rt0(ir,ic) .gt. 21) rt0(ir,ic) = 21
         endif
-!------------------------ downscaling Ep -------------------
-        if(evap_daily.lt.0.0) evap_daily = 0.0
+               
         Ep = 0.0
-!------------ ÒýÓÃ×ÔÈ»ÈÕÈëÁ÷ÊýŸÝ ----------------!
-        if(idh.eq.6.or.idh.eq.17) Ep = evap_daily*0.03
-        if(idh.eq.7.or.idh.eq.16) Ep = evap_daily*0.06
-        if(idh.eq.8.or.idh.eq.15) Ep = evap_daily*0.08
-        if(idh.eq.9.or.idh.eq.14) Ep = evap_daily*0.10
+        if(idh.eq.6.or.idh.eq.17)  Ep = evap_daily*0.03
+        if(idh.eq.7.or.idh.eq.16)  Ep = evap_daily*0.06
+        if(idh.eq.8.or.idh.eq.15)  Ep = evap_daily*0.08
+        if(idh.eq.9.or.idh.eq.14)  Ep = evap_daily*0.10
         if(idh.eq.10.or.idh.eq.13) Ep = evap_daily*0.11
         if(idh.eq.11.or.idh.eq.12) Ep = evap_daily*0.12
 !------------------------ downscaling Prec --------------------
@@ -895,13 +885,6 @@
           r = rain_daily/24.0
         end if
 !------------------------ downscaling Temp --------------------
-        if(tmin_daily.eq.-9999) then
-          tmin_daily = 0.0
-          print *,"min temperature is  -9999"
-        end if
-        if(tmax_daily.eq.-9999) then
-          tmax_daily = 0.0
-        end if
         if(idh.ge.4 .and. idh.lt.14) then
           T = tmin_daily+ (tmax_daily-tmin_daily)*(1-cos((idh-4)*3.1415926/10.0))/2.0
         else
@@ -996,6 +979,179 @@
         y = h2
         return
       end subroutine nkws
+      
+      
+      
+      
+      subroutine Initianize()
+      implicit none
+      
+      
+      if(start .eq. 1 .and. isub.eq.start_sub) then
+        do ir = 1, nrow
+          do 10 ic = 1, ncol
+            isoil=soil(ir,ic)
+            D(ir,ic,1)   = 0.05  !changed by mqh
+            layer(ir,ic) = 1
+            tmp          = D(ir,ic,1)
+            do j = 2,10
+              if(j.le.4)              D(ir,ic,j) = D(ir,ic,j-1) + 0.05
+              if(j.gt.4 .and. j.le.5) D(ir,ic,j) = D(ir,ic,j-1) + 0.10
+              if(j.gt.5 .and. j.le.7) D(ir,ic,j) = D(ir,ic,j-1) + 0.20
+              if(j.gt.7 .and. j.le.8) D(ir,ic,j) = D(ir,ic,j-1) + 0.30
+              if(j.gt.8)              D(ir,ic,j) = D(ir,ic,j-1) + 0.50
+              tmp          = tmp + D(ir,ic,j)
+              layer(ir,ic) = j
+              if(tmp .ge. Ds(ir,ic))    goto 20
+            end do
+ 20         D(ir,ic,j) = D(ir,ic,j) + Ds(ir,ic)-tmp
+            if(D(ir,ic,j) .lt. D(ir,ic,j-1)-0.05) then
+              D(ir,ic,j-1) = 0.5*(D(ir,ic,j)+D(ir,ic,j-1))
+              D(ir,ic,j)   = D(ir,ic,j-1)
+            endif
+
+           if(area(ir,ic).eq.-9999.or.isoil.eq.-9999) goto 10
+
+!--------------- compute the k0 for each layer --------------
+           tmp = 0.0
+             do j = 1, layer(ir,ic)
+             tmp = tmp + D(ir,ic,j)
+             f   = -alog(ksat2(ir,ic)/ksat1(ir,ic))/Ds(ir,ic)
+             k0(ir,ic,j) = ksat1(ir,ic)*exp(-f*tmp)
+           end do
+ 10      continue 
+       end do
+      end if
+
+
+!        read soil and groundwater initial conditions
+      if(start.eq.1) then
+!--------------- read from the files --------------
+        if(inicon.eq.1) then
+          call strlen(simul_dir,ia1,ia2)
+          open(1,file=simul_dir(ia1:ia2)//subbasin(isub)//'I_soil2',status='old')
+          do iflow = 1, nflow(isub)
+            do ig = 1, ngrid(isub,iflow)
+              ir    = grid_row(isub,iflow,ig)
+              ic    = grid_col(isub,iflow,ig)
+              isoil = soil(ir,ic)
+              read(1,*) ia1, ia2, ib1, ib2
+              do iland = 1, ib1
+                if(land_ratio(ir,ic,iland) .gt. 0.0) read (1,*) (w(ir,ic,iland,j),j=1,ib2),Dgl(ir,ic,iland), Gwst(ir,ic,iland)
+                if(Gwst(ir,ic,iland) .ge. Dg(ir,ic)*GWcs(ir,ic)-0.1E-2) Dgl(ir,ic,iland) = Ds(ir,ic)
+                if(Gwst(ir,ic,iland) .le. 0.0) Gwst(ir,ic,iland) = 0.0
+                if(Dgl(ir,ic,iland)  .ge. Ds(ir,ic)+Dg(ir,ic)) Dgl(ir,ic,iland) = Ds(ir,ic)+Dg(ir,ic)
+              end do
+            end do
+          end do
+          close(1)
+!--------------- specify by the following way --------------
+        else
+          if(isub.eq.start_sub) then
+            do ir=1,nrow
+              do ic=1,ncol
+                isoil=soil(ir,ic)
+                if(isoil .eq. -9999) goto 28
+                do iland=1,nland
+                  Dgl(ir,ic,iland)  = Ds(ir,ic)
+                  GWst(ir,ic,iland) = (Ds(ir,ic)+Dg(ir,ic)-Dgl(ir,ic,iland))*Gwcs(ir,ic)
+                      tmp = 0.0
+                  D0  = Ds(ir,ic)*wrsd(ir,ic)/(wsat(ir,ic)-wrsd(ir,ic))
+                  do j= 1, layer(ir,ic)
+                    tmp = tmp+D(ir,ic,j)
+                    w(ir,ic,iland,j) = wsat(ir,ic)*(D0+tmp)/(D0+Ds(ir,ic))
+                    if(isoil.eq.-9999) w(ir,ic,iland,j) = wfld(ir,ic)
+                  end do
+                end do
+28            continue
+              end do
+            end do
+          end if
+        end if
+      end if
+!            sub-basin area Ãæ»ý
+      if(start.eq.1) then
+        if(isub.eq.start_sub) basinarea = 0
+        subarea(isub) = 0 
+        do iflow = 1, nflow(isub)
+            do ig = 1, ngrid(isub,iflow)
+              ir = grid_row(isub,iflow,ig)
+              ic = grid_col(isub,iflow,ig)
+              if(area(ir,ic) .eq. -9999.0) print*,'wrong in grid-area'
+              basinarea = basinarea + area(ir,ic)
+              subarea(isub) = subarea(isub) + area(ir,ic)
+            end do
+        end do
+      end if
+
+!                     initialize status variables
+      if(isub.eq.start_sub .and. start.eq.1 ) then
+        do ir = 1, nrow
+         do  ic = 1, ncol
+           evap_month(ir,ic) = 0.0
+           soil_month(ir,ic) = 0.0
+           runoff_month(ir,ic) = 0.0
+           grunoff_month(ir,ic) = 0.0
+           srunoff_month(ir,ic) = 0.0
+           drunoff_month(ir,ic) = 0.0
+           ecy_month(ir,ic)  = 0.0
+           ecp_month(ir,ic)  = 0.0
+           ese_month(ir,ic)  = 0.0
+           do iland = 1,nland
+             Cst(ir,ic,iland) = 0.0
+             Sst(ir,ic,iland) = 0.0
+          end do
+         end do
+        end do
+      end if
+
+      if(isub.eq.start_sub .and. (start.eq.1 .or.(idc.eq.1 .and.ihc.eq.1))) then
+        do ir = 1, nrow
+          do 50 ic = 1, ncol
+            do i=1,366
+              raind(ir,ic,i)     = 0.0
+              eactd(ir,ic,i)     = 0.0
+              ecy(ir,ic,i)       = 0.0
+              ecp(ir,ic,i)       = 0.0
+              ese(ir,ic,i)       = 0.0
+              runoffd(ir,ic,i)   = 0.0
+              srunoff(ir,ic,i)   = 0.0
+              groundoff(ir,ic,i) = 0.0
+              soiloff(ir,ic,i)   = 0.0
+            end do
+ 50       continue
+        end do
+        annual_Cst0  = 0.0
+        annual_Ssts0 = 0.0
+        annual_Sstr0 = 0.0
+        annual_SBst0 = 0.0
+        annual_Gst0  = 0.0
+      end if
+
+      if( start .eq. 1 .or. (idc.eq.1 .and. ihc.eq.1)) then 
+        do iflow = 1, nflow(isub)
+!          annual_re0 = annual_re0 + re_capacity(isub,iflow)
+            do ig = 1, ngrid(isub,iflow)
+            ir = grid_row(isub,iflow,ig)
+            ic = grid_col(isub,iflow,ig)
+!            isoil = soil(ir,ic)
+            do  iland = 1, nland
+              if(land_ratio(ir,ic,iland) .gt. 0.0) then
+              annual_Cst0 = annual_Cst0 + Cst(ir,ic,iland)*0.001*land_ratio(ir,ic,iland)*area(ir,ic) !in m3
+              annual_Sstr0= annual_Sstr0 + Sst(ir,ic,iland)* 0.001*land_ratio(ir,ic,iland)*area(ir,ic) !in m3
+              annual_Ssts0= annual_Ssts0 + snow(ir,ic,iland)*0.001*land_ratio(ir,ic,iland)*area(ir,ic) !in m3
+              annual_Gst0 = annual_Gst0 + GWst(ir,ic,iland)*area(ir,ic)*land_ratio(ir,ic,iland)       !in m3
+              do j = 1 ,layer(ir,ic)
+                annual_SBst0 = annual_SBst0 + w(ir,ic,iland,j) * D(ir,ic,j)*land_ratio(ir,ic,iland)*area(ir,ic)      !in m3
+              end do
+              end if
+            end do 
+          end do
+        end do
+      end if     
+!                     initialize irrigation variables
+      if(start .eq. 1) return
+      end subroutine Initianize
 
 
 

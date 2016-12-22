@@ -1,14 +1,28 @@
-!            ***** Hydrological Response on Hillslope  *****          *
-      subroutine hillslope_model(isub)
-        implicit none
-!       include 'dims2.inc'
+    subroutine hillslope_model(isub)
+      use global_para_mod,only:i4,r8,nrow,ncol,day,iflai
+      use hydro_para_mod,only:nflow,ngrid,grid_row,grid_col
+      use soil_para_mod,only:soil
+      use land_para_mod,only:land_ratio，LAImax，LAI
+      use forcing
         
-
-
-        integer(i4)::isub              ! sub-basin number
-        integer(i4)::iflow            ! flow-interval number
+      implicit none
         real(r8):: smf                        ! snow melting factor
+        integer(i4)::isub              ! sub-basin number
+        integer(i4)::iflow             ! flow-interval number     
         integer(i4)::isoil                    ! soil number
+        integer(i4):: ir,ic            
+        integer(i4):: ig                   
+        integer(i4):: iland   
+        
+        
+        real(r8)::Cstmax               ! maximal canopy storage           
+      
+      
+      
+
+
+
+
         integer(i4):: iland                    ! land-use number
         real(r8)::    kmoist                ! evaporation coefficient of soil mositure  
         real(r8)::    soil_con_f       ! soil water conservation factor
@@ -42,8 +56,8 @@
         character*4::    ch4        ! a 4-character variable
         real(r8):: tmp,temp          !,mean , value   ! temporary variables
         integer(i4):: i, j              !, k,n,m temporary variables
-        integer(i4):: ig,nuz                    !,ii, jj
-        integer(i4):: ir, ic            !, iyy, imm, idd
+
+
 
         integer(i4):: ia1, ia2  , ib1, ib2 !, ic1, ic2
         integer(i4):: ii2,j1,j2,jj,imm,iidd,nday
@@ -68,12 +82,6 @@
         real(r8):: result_soilwater1,result_soilwater2,result_soilwater3,result_soilwater4,result_soilwater5,result_soilwater6
         integer(i4):: luolicun(nc)  !ŽæŽ¢ÄÄÐ©ÊÇÂÞÀîŽåµÄÉÏÓÎÕŸ
 
-        data luolicun2 /1,1,0,0,0,1,1,1,0,0,1,1,1,1,1,1,0,1,0,
-     :1,1,1,1,0,0,1,1,0,1,0,1,1,
-     : 1,1,1,1,0,1,0,1,1,0,0,1,0,1,1,1,1,0,0,1,0,1,1,0,0,0,0,0,0,0,0,0,
-     :0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
-     :0,1,0,0,0,0,1,1,1,1,1,1,1,1,0,1,1,0,0,1,0,0,1,0,0,1,0,1,1,1,1,1,1,
-     :1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0/
 
 !     NDVI-->LAI look-up table
       data T_NDVI/0.025,0.075,0.125,0.175,0.225,0.275,0.325,0.375,0.425,0.475,0.525,0.575,0.625,0.675,&
@@ -88,486 +96,135 @@
             1.739,2.738,5.349,6.062,6.543,6.543,6.543/
 
 
-        data luolicun /1,1,0,0,0,1,1,1,0,0,1,1,1,1,1,1,0,1,0,
-     :1,1,1,1,0,0,1,1,0,1,0,1,1,
-     : 1,1,1,1,0,1,0,1,1,0,0,1,0,1,1,1,1,0,0,1,0,1,1,0,0,0,0,0,0,0,0,0,
-     :0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
-     :0,1,0,0,0,0,1,1,1,1,1,1,1,1,0,1,1,0,0,1,0,0,1,0,0,1,0,1,1,1,1,1,1,
-     :1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0/
 
 
 
       smf  = 0.1     ! snowmelting factor  !mqh,from 0.15 to 0.1
-      if(start .eq. 1 .and. isub.eq.start_sub) then
-        do ir = 1, nrow
-          do 10 ic = 1, ncol
-            isoil=soil(ir,ic)
-            D(ir,ic,1)   = 0.05  !changed by mqh
-            layer(ir,ic) = 1
-            tmp          = D(ir,ic,1)
-            do j = 2,10
-              if(j.le.4)              D(ir,ic,j) = D(ir,ic,j-1) + 0.05
-              if(j.gt.4 .and. j.le.5) D(ir,ic,j) = D(ir,ic,j-1) + 0.10
-              if(j.gt.5 .and. j.le.7) D(ir,ic,j) = D(ir,ic,j-1) + 0.20
-              if(j.gt.7 .and. j.le.8) D(ir,ic,j) = D(ir,ic,j-1) + 0.30
-              if(j.gt.8)              D(ir,ic,j) = D(ir,ic,j-1) + 0.50
-              tmp          = tmp + D(ir,ic,j)
-              layer(ir,ic) = j
-              if(tmp .ge. Ds(ir,ic))    goto 20
-            end do
- 20         D(ir,ic,j) = D(ir,ic,j) + Ds(ir,ic)-tmp
-            if(D(ir,ic,j) .lt. D(ir,ic,j-1)-0.05) then
-              D(ir,ic,j-1) = 0.5*(D(ir,ic,j)+D(ir,ic,j-1))
-              D(ir,ic,j)   = D(ir,ic,j-1)
-            endif
-
-           if(area(ir,ic).eq.-9999.or.isoil.eq.-9999) goto 10
-
-!--------------- compute the k0 for each layer --------------
-           tmp = 0.0
-             do j = 1, layer(ir,ic)
-             tmp = tmp + D(ir,ic,j)
-             f   = -alog(ksat2(ir,ic)/ksat1(ir,ic))/Ds(ir,ic)
-             k0(ir,ic,j) = ksat1(ir,ic)*exp(-f*tmp)
-           end do
- 10      continue 
-       end do
-      end if
-
-
-!        read soil and groundwater initial conditions
-      if(start.eq.1) then
-!--------------- read from the files --------------
-        if(inicon.eq.1) then
-          call strlen(simul_dir,ia1,ia2)
-          open(1,file=simul_dir(ia1:ia2)//subbasin(isub)//'I_soil2',status='old')
-          do iflow = 1, nflow(isub)
-            do ig = 1, ngrid(isub,iflow)
-              ir    = grid_row(isub,iflow,ig)
-              ic    = grid_col(isub,iflow,ig)
-              isoil = soil(ir,ic)
-              read(1,*) ia1, ia2, ib1, ib2
-              do iland = 1, ib1
-                if(land_ratio(ir,ic,iland) .gt. 0.0) read (1,*) (w(ir,ic,iland,j),j=1,ib2),Dgl(ir,ic,iland), Gwst(ir,ic,iland)
-                if(Gwst(ir,ic,iland) .ge. Dg(ir,ic)*GWcs(ir,ic)-0.1E-2) Dgl(ir,ic,iland) = Ds(ir,ic)
-                if(Gwst(ir,ic,iland) .le. 0.0) Gwst(ir,ic,iland) = 0.0
-                if(Dgl(ir,ic,iland)  .ge. Ds(ir,ic)+Dg(ir,ic)) Dgl(ir,ic,iland) = Ds(ir,ic)+Dg(ir,ic)
-              end do
-            end do
-          end do
-          close(1)
-!--------------- specify by the following way --------------
-        else
-          if(isub.eq.start_sub) then
-            do ir=1,nrow
-              do ic=1,ncol
-                isoil=soil(ir,ic)
-                if(isoil .eq. -9999) goto 28
-                do iland=1,nland
-                  Dgl(ir,ic,iland)  = Ds(ir,ic)
-                  GWst(ir,ic,iland) = (Ds(ir,ic)+Dg(ir,ic)-Dgl(ir,ic,iland))*Gwcs(ir,ic)
-                      tmp = 0.0
-                  D0  = Ds(ir,ic)*wrsd(ir,ic)/(wsat(ir,ic)-wrsd(ir,ic))
-                  do j= 1, layer(ir,ic)
-                    tmp = tmp+D(ir,ic,j)
-                    w(ir,ic,iland,j) = wsat(ir,ic)*(D0+tmp)/(D0+Ds(ir,ic))
-                    if(isoil.eq.-9999) w(ir,ic,iland,j) = wfld(ir,ic)
-                  end do
-                end do
-28            continue
-              end do
-            end do
-          end if
-        end if
-      end if
-!            sub-basin area Ãæ»ý
-      if(start.eq.1) then
-        if(isub.eq.start_sub) basinarea = 0
-        subarea(isub) = 0 
-        do iflow = 1, nflow(isub)
-            do ig = 1, ngrid(isub,iflow)
-              ir = grid_row(isub,iflow,ig)
-              ic = grid_col(isub,iflow,ig)
-              if(area(ir,ic) .eq. -9999.0) print*,'wrong in grid-area'
-              basinarea = basinarea + area(ir,ic)
-              subarea(isub) = subarea(isub) + area(ir,ic)
-            end do
-        end do
-      end if
-
-!                     initialize status variables
-      if(isub.eq.start_sub .and. start.eq.1 ) then
-        do ir = 1, nrow
-         do  ic = 1, ncol
-           evap_month(ir,ic) = 0.0
-           soil_month(ir,ic) = 0.0
-           runoff_month(ir,ic) = 0.0
-           grunoff_month(ir,ic) = 0.0
-           srunoff_month(ir,ic) = 0.0
-           drunoff_month(ir,ic) = 0.0
-           ecy_month(ir,ic)  = 0.0
-           ecp_month(ir,ic)  = 0.0
-           ese_month(ir,ic)  = 0.0
-           do iland = 1,nland
-             Cst(ir,ic,iland) = 0.0
-             Sst(ir,ic,iland) = 0.0
-          end do
-         end do
-        end do
-      end if
-
-      if(isub.eq.start_sub .and. (start.eq.1 .or.(idc.eq.1 .and.ihc.eq.1))) then
-        do ir = 1, nrow
-          do 50 ic = 1, ncol
-            do i=1,366
-              raind(ir,ic,i)     = 0.0
-              eactd(ir,ic,i)     = 0.0
-              ecy(ir,ic,i)       = 0.0
-              ecp(ir,ic,i)       = 0.0
-              ese(ir,ic,i)       = 0.0
-              runoffd(ir,ic,i)   = 0.0
-              srunoff(ir,ic,i)   = 0.0
-              groundoff(ir,ic,i) = 0.0
-              soiloff(ir,ic,i)   = 0.0
-            end do
- 50       continue
-        end do
-        annual_Cst0  = 0.0
-        annual_Ssts0 = 0.0
-        annual_Sstr0 = 0.0
-        annual_SBst0 = 0.0
-        annual_Gst0  = 0.0
-      end if
-
-      if( start .eq. 1 .or. (idc.eq.1 .and. ihc.eq.1)) then 
-        do iflow = 1, nflow(isub)
-!          annual_re0 = annual_re0 + re_capacity(isub,iflow)
-            do ig = 1, ngrid(isub,iflow)
-            ir = grid_row(isub,iflow,ig)
-            ic = grid_col(isub,iflow,ig)
-!            isoil = soil(ir,ic)
-            do  iland = 1, nland
-              if(land_ratio(ir,ic,iland) .gt. 0.0) then
-              annual_Cst0 = annual_Cst0 + Cst(ir,ic,iland)*0.001*land_ratio(ir,ic,iland)*area(ir,ic) !in m3
-              annual_Sstr0= annual_Sstr0 + Sst(ir,ic,iland)* 0.001*land_ratio(ir,ic,iland)*area(ir,ic) !in m3
-              annual_Ssts0= annual_Ssts0 + snow(ir,ic,iland)*0.001*land_ratio(ir,ic,iland)*area(ir,ic) !in m3
-              annual_Gst0 = annual_Gst0 + GWst(ir,ic,iland)*area(ir,ic)*land_ratio(ir,ic,iland)       !in m3
-              do j = 1 ,layer(ir,ic)
-                annual_SBst0 = annual_SBst0 + w(ir,ic,iland,j) * D(ir,ic,j)*land_ratio(ir,ic,iland)*area(ir,ic)      !in m3
-              end do
-              end if
-            end do 
-          end do
-        end do
-      end if
-
-     
-!                     initialize irrigation variables
-      if(start .eq. 1) return
-!     start simulation
-!          interception, evapotranspiration   
-      do 999 iflow=1,nflow(isub)
+      do iflow=1,nflow(isub)
         do ig=1,ngrid(isub,iflow)
-          ir=grid_row(isub,iflow,ig)
-          ic=grid_col(isub,iflow,ig)
-          isoil=soil(ir,ic)
-! variable using for water balance calculation
-          do 888 iland = 1, nland
-            call rain_model(isub, ir, ic, hour, month,rain_daily(ir,ic,day),tmin_daily(ir,ic,day),&
-                tmax_daily(ir,ic,day), evap_daily(ir,ic,day,iland),prec, temper, Ep, iland)
-            prec = pre_hour(ir,ic,day,hour)
+           ir=grid_row(isub,iflow,ig)
+           ic=grid_col(isub,iflow,ig)
+           isoil=soil(ir,ic)
+           prec  = pre_hour (ir,ic,day,hour)
+           temper= temp_hour(ir,ic,day,hour)
+           Ep    = Ep_hour  (ir,ic,day,hour)
+          do iland = 1, nland
             if(iland.eq.1) then
-               raind(ir,ic,idc) = raind(ir,ic,idc) + prec
+              raind(ir,ic,idc) = raind(ir,ic,idc) + prec
             end if
             pnet           = prec
             Eact           = 0.0
-            if(land_ratio(ir,ic,iland).le.0.0) goto 888
-            if(iflai .eq. 0 ) then
-!          NDVI -> LAI  
-            do j=1,12
-              if(year >=1998) then
-                do kn = 1,3           
-                  NDVI(ir,ic,j,kn)=yndvi(ir,ic,j,kn)
-                enddo
-              else
-                do kn = 1,2           
-                  NDVI(ir,ic,j,kn)=yndvi(ir,ic,j,kn)
-                enddo
-                NDVI(ir,ic,j,3)=yndvi(ir,ic,j,2)
-              endif
-              do kn =1,3
-                if(NDVI(ir,ic,j,kn) .le. 0.0)   NDVI(ir,ic,j,kn) = 0.025
-                if(NDVI(ir,ic,j,kn) .gt. 0.975) NDVI(ir,ic,j,kn) = 0.975
-                do i_ndvi=1, 19
-                  if(NDVI(ir,ic,j,kn) .le. T_NDVI(1)) ii_ndvi = 1
-                  if(NDVI(ir,ic,j,kn).gt.T_NDVI(i_ndvi) .and.NDVI(ir,ic,j,kn).le.T_NDVI(i_ndvi+1)) then
-                    ii_ndvi = i_ndvi
-                  end if    
-                  if(NDVI(ir,ic,j,kn) .gt. T_NDVI(20)) ii_ndvi = 20
-                end do
-                c4 = 0.4  !changed from 0.4 to 0.3
-                if(iland.eq.1 .or. iland.eq.10) then  !waterbody or frost snow
-                  LAI(ir,ic,j,kn) = 0.0
-                end if 
+            if(land_ratio(ir,ic,iland).gt.0.0) then
+              dLAI=LAI(ir,ic,iland,day)
+!interception
+              Cstmax = 0.10*dLAI
+              if(iland.eq.4 .or. iland.eq.8) then !forest or shurb
+                Cstmax = 1.00*dLAI 
+              end if            
+              if(pnet.gt. 0.0) then
+                DeficitCst = Cstmax- Cst(ir,ic,iland)
+                DeficitCst = amax1(DeficitCst,0.0)
+                if(pnet .gt. DeficitCst) then
+                  Cst(ir,ic,iland) = Cst(ir,ic,iland) + DeficitCst
+                  pnet = pnet - DeficitCst 
+                else
+                  Cst(ir,ic,iland) = Cst(ir,ic,iland)+pnet
+                  pnet = 0.0 
+                end if        
+                if(temper .le. 1.0) then
+                  snow(ir,ic,iland) = snow(ir,ic,iland) + pnet
+                  pnet=0.0 
+                end if
+                snowmelt=0.0
+                if(temper .gt. 0.0 .and. snow(ir,ic,iland).gt.0.0) then
+                  if(month.ge.3.and.month.le.10) smf= 0.15
+                  if(month.ge.5.and.month.le.8)  smf = 0.15
+                  snowmelt = (smf+pnet/20.0) * (temper-1.5)
+                  snowmelt = amin1(snowmelt,snow(ir,ic,iland))
+                  snow(ir,ic,iland)=snow(ir,ic,iland)-snowmelt             
+                  pnet=pnet+snowmelt 
+                end if
+                Sst(ir,ic,iland) = Sst(ir,ic,iland) + pnet
+              end if
+            
+!(1) evaporation from canopy storage
+              EfromCanopy = 0.0
+              EfromCrop   = 0.0
+              EfromSurface= 0.0
+              c2=0.05+0.1*dLAI/LAImax(iland)
+              c1=0.31*dLAI
+              c3=0.23+0.1*(dLAI/LAImax(iland))**0.5 
+              c5=0.23
 
-                if(iland.eq.2) then  !urban-area
-                   if(ii_ndvi.eq.0 .or. ii_ndvi.eq.20) then
-                     LAI(ir,ic,j,kn)=Shurb_LAI(ii_ndvi)           
-                   else
-                     LAI(ir,ic,j,kn) = Shurb_LAI(ii_ndvi) + (NDVI(ir,ic,j,kn)-T_NDVI(ii_ndvi))*&
-                       (Shurb_LAI(ii_ndvi+1)-Shurb_LAI(ii_ndvi))/(T_NDVI(ii_ndvi+1)-T_NDVI(ii_ndvi))           
-                   end if
-                   c4 = 0.06
-                end if 
-
-                if(iland.eq.3) then  !baresoil
-                  LAI(ir,ic,j,kn) = 0.2*NDVI(ir,ic,j,kn)+0.2
-                  c4=0.4 ! changed by gaobing
-                end if 
-
-                if(iland.eq.4) then  !forest
-                  if(ii_ndvi.eq.0 .or. ii_ndvi.eq.20) then
-                    LAI(ir,ic,j,kn) = Forest_LAI(ii_ndvi)           
-                  else
-                    LAI(ir,ic,j,kn)=Forest_LAI(ii_ndvi)+(NDVI(ir,ic,j,kn)-T_NDVI(ii_ndvi))*(Forest_LAI(ii_ndvi+1)-&
-                        Forest_LAI(ii_ndvi))/(T_NDVI(ii_ndvi+1)-T_NDVI(ii_ndvi))           
-                  end if
-                  if(iland.eq.4) c4 = 0.2
-                end if 
-
-                if(iland.ge.5) then  ! sparse vegetion
-                  LAI(ir,ic,j,kn)=1.71*NDVI(ir,ic,j,kn)+0.48
-                  c4 = 0.3
-                end if 
-
-                if(iland.eq.6) then  !upland
-                  if(ii_ndvi.eq.0 .or. ii_ndvi.eq.20) then
-                    LAI(ir,ic,j,kn)=N_IRR_LAI(ii_ndvi)           
-                  else
-                    LAI(ir,ic,j,kn)=N_IRR_LAI(ii_ndvi)+(NDVI(ir,ic,j,kn)-T_NDVI(ii_ndvi))*(N_IRR_LAI(ii_ndvi+1)-&
-                      N_IRR_LAI(ii_ndvi))/(T_NDVI(ii_ndvi+1)-T_NDVI(ii_ndvi))           
-                  end if
-                end if 
-
-                if(iland.eq.7) then  !grassland
-                  LAI(ir,ic,j,kn)=1.71*NDVI(ir,ic,j,kn)+0.48
-                  if(iland.eq.7) c4 = 0.3
-                end if 
-
-               if(iland.eq.8) then  !shrub
-                 if(ii_ndvi.eq.0 .or. ii_ndvi.eq.20) then
-                   LAI(ir,ic,j,kn)=Shurb_LAI(ii_ndvi)           
-                 else
-                   LAI(ir,ic,j,kn)=Shurb_LAI(ii_ndvi)+(NDVI(ir,ic,j,kn)-T_NDVI(ii_ndvi))*(Shurb_LAI(ii_ndvi+1)-&
-                      Shurb_LAI(ii_ndvi))/(T_NDVI(ii_ndvi+1)-T_NDVI(ii_ndvi))           
-                 end if
-                 c4 = 0.08
-               end if 
-
-               if(iland.eq.9) then  !wetland
-                 LAI(ir,ic,j,kn) = 1.71*NDVI(ir,ic,j,kn)+0.48
-               end if 
-
-               if(LAI(ir,ic,j,kn) .lt. 0.0) LAI(ir,ic,j,kn) = 0.0
-               if(LAI(ir,ic,j,kn) .gt. LAImax(iland)) then
-                 LAImax(iland) = LAI(ir,ic,j,kn)
-               end if
-             enddo ! kn
-           end do
-
-           if(year >=1998) then                         
-             if(day.lt. 10) then
-               dLAI=LAI(ir,ic,month,1)
-             elseif (day. gt. 20) then
-               dLAI=LAI(ir,ic,month,3)
-             else
-               dLAI=LAI(ir,ic,month,2)
-             end if              
-           else
-             if(day.lt. 15) then
-               dLAI=LAI(ir,ic,month,1)
-             else
-               dLAI=LAI(ir,ic,month,2)
-             end if 
-           endif
-         else ! IFLAI == 1
-           if(iland .eq. 7) then
-             do kn = 1,4
-               if (LAI(ir,ic,month,kn) > LAImax(iland) ) then
-                 LAI(ir,ic,month,kn)=LAImax(iland)-0.2
-               endif
-             enddo
-           endif
-           if(iland .eq. 9) then
-             do kn =1,4
-               if (LAI(ir,ic,month,kn) > LAImax(iland) ) then
-                 LAI(ir,ic,month,kn)=LAImax(iland)-0.2
-               endif
-             enddo
-           endif
-           if(iland .eq. 8) then
-             do kn = 1,4
-               if (LAI(ir,ic,month,kn) > LAImax(iland) ) then
-                 LAI(ir,ic,month,kn)=LAImax(iland)-0.2
-               endif
-             enddo
-           endif
-          if(iland .eq. 3) then
-            do kn = 1,4
-              if (LAI(ir,ic,month,kn) > LAImax(iland) ) then
-                LAI(ir,ic,month,kn)=LAImax(iland)-0.2
-              endif
-            enddo
-          endif
-          if(iland .eq. 1 .or. iland .eq . 6) then
-            do kn = 1,4
-              if (LAI(ir,ic,month,kn) > LAImax(iland) ) then
-                LAI(ir,ic,month,kn)=LAImax(iland)
-              endif
-            enddo
-          endif
-          if(iland .eq. 10) then
-            do kn = 1,4
-              if (LAI(ir,ic,month,kn) > LAImax(iland) ) then
-                LAI(ir,ic,month,kn)=LAImax(iland)
-              endif
-            enddo
-          endif
-          if(iland .eq. 2) then
-            do kn = 1,4
-              if (LAI(ir,ic,month,kn) > LAImax(iland) ) then
-                LAI(ir,ic,month,kn)=LAImax(iland)
-              endif
-            enddo
-          endif
-
-          if(day.lt. 8) then
-            dLAI=LAI(ir,ic,month,1)      
-          elseiF(  day .lt. 16 .and. day .ge. 8) then
-            dLAI=LAI(ir,ic,month,2)
-          elseif(  day .lt. 24 .and. day .ge. 16) then
-            dLAI=LAI(ir,ic,month,3)
-          else
-            dLAI=LAI(ir,ic,month,4)
-          end if 
-        endif
-
-!          interception  
-             Cstmax(ir,ic,iland) = 0.10*dLAI
-             if(iland.eq.4 .or. iland.eq.8) then !forest or shurb
-               Cstmax(ir,ic,iland) = 1.00*dLAI 
-             end if
-             if(pnet.le. 0.0) goto 250
-             DeficitCst = Cstmax(ir,ic,iland) - Cst(ir,ic,iland)
-             DeficitCst = amax1(DeficitCst,0.0)
-             if(pnet .gt. DeficitCst) then
-               Cst(ir,ic,iland) = Cst(ir,ic,iland) + DeficitCst
-               pnet = pnet - DeficitCst 
-             else
-               Cst(ir,ic,iland) = Cst(ir,ic,iland)+pnet
-               pnet = 0.0 
-             end if 
-       
-             if(temper .le. 1.0) then
-               snow(ir,ic,iland) = snow(ir,ic,iland) + pnet
-               pnet=0.0 
-             end if
-             snowmelt=0.0
-
-             if(temper .gt. 0.0 .and. snow(ir,ic,iland).gt.0.0) then
-               if(month.ge.3.and.month.le.10) smf= 0.15
-               if(month.ge.5.and.month.le.8)  smf = 0.15
-               snowmelt = (smf+pnet/20.0) * (temper-1.5)
-               snowmelt = amin1(snowmelt,snow(ir,ic,iland))
-               snow(ir,ic,iland)=snow(ir,ic,iland)-snowmelt             
-               pnet=pnet+snowmelt 
-             end if
-
-             Sst(ir,ic,iland) = Sst(ir,ic,iland) + pnet
-!            (1) evaporation from canopy storage  
-250         continue
-            EfromCanopy = 0.0
-            EfromCrop   = 0.0
-            EfromSurface= 0.0
-            c2=0.05+0.1*dLAI/LAImax(iland)
-            c1=0.31*dLAI
-            c3 =  0.23+0.1*(dLAI/LAImax(iland))**0.5            ! 
-            c5 =      0.23
-            if (luolicun2(isub).eq.1) then
-              c1=c1*0.5
-              c2=c2*0.5
-              c3=c3*0.5
-              c5=c5*0.4
-            endif
-
-
-            Etr = Ep*amin1(c2+c1,1.0)
-            Es  = (Ep*(c2+(1-c2)*(1-amin1(c2+c1,1.0))) -Etr*(1-amin1(c2+c1,1.0)))*&
-            (1-exp(-c4*dLAI))+Ep*exp(-c4*dLAI)*(c5+(1.0-c5)*dLAI/LAImax(iland))**(1.0+c3)
-            if(iland.eq.3) then  !baresoil
-              Es  = Ep*exp(-c4*dLAI)
-            end if
+              Etr = Ep*amin1(c2+c1,1.0)
+              Es  = (Ep*(c2+(1-c2)*(1-amin1(c2+c1,1.0))) -Etr*(1-amin1(c2+c1,1.0)))*&
+                (1-exp(-c4*dLAI))+Ep*exp(-c4*dLAI)*(c5+(1.0-c5)*dLAI/LAImax(iland))**(1.0+c3)
+              if(iland.eq.3) then  !baresoil
+                Es  = Ep*exp(-c4*dLAI)
+              end if
                  
-            if(iland.eq.1) then  !waterbody
-              Es  = Ep           !*(1-Kcanopy(iland))
-            end if   
-            Etr = Etr*(1-exp(-c4*dLAI))      !Kcanopy(iland)
+              if(iland.eq.1) then  !waterbody
+                Es  = Ep           !*(1-Kcanopy(iland))
+              end if   
+              Etr = Etr*(1-exp(-c4*dLAI))      !Kcanopy(iland)
 
-            if(Etr .lt. 0.1E-9) goto 270
-
-            EfromCanopy = amin1(Etr, Cst(ir,ic,iland)) 
-            Cst(ir,ic,iland) = Cst(ir,ic,iland) - EfromCanopy
-            if(EfromCanopy.lt.0.0) print *,'wrong in E from canopy',ihc,iflow,EfromCanopy
-
-!          (2) transpiration from vegetation
-            if(root(iland).eq.0.0) goto 270
-            i      = 0          ! layer of root           
-            para_r = 0.1        ! root density ratio of deepest layer (<=1.0)
-            tmp    = 0.0
-            do j = 1, layer(ir,ic)
-              tmp = tmp + D(ir,ic,j)
-              i   = i + 1
-              if(tmp .ge. root(iland)) goto 266
-            end do
- 266        if(layer(ir,ic) .le. i) i = layer(ir,ic)
-            para_a = 1.0/(float(i) - 0.5*(1.0-para_r)*float(i-1))
+! (2) transpiration from vegetation
+              if(Etr .ge. 0.1E-9) then
+                EfromCanopy = amin1(Etr, Cst(ir,ic,iland)) 
+                Cst(ir,ic,iland) = Cst(ir,ic,iland) - EfromCanopy
+                if(EfromCanopy.lt.0.0) print *,'wrong in E from canopy',ihc,iflow,EfromCanopy
+                if(root(iland).ne.0.0) then
+                  i      = 0          ! layer of root           
+                  para_r = 0.1        ! root density ratio of deepest layer (<=1.0)
+                  tmp    = 0.0
+                  do j = 1, layer(ir,ic)
+                    tmp = tmp + D(ir,ic,j)
+                    i   = i + 1
+                    if(tmp .ge. root(iland)) then
+                      exit
+                    end if
+                  end do
+                  if(layer(ir,ic) .le. i) i = layer(ir,ic)
+                  para_a = 1.0/(float(i) - 0.5*(1.0-para_r)*float(i-1))
                   
-            do j=1,i
-              y = (1.0-(1.0-para_r)*float(j-1)/float(i))*para_a
-              call ETsoil(w(ir,ic,iland,j), wfld(ir,ic), wrsd(ir,ic), kmoist)
-              tmp = y * Etr * kmoist
-              tmp=amin1(tmp,temp) 
-              w(ir,ic,iland,j) = w(ir,ic,iland,j) -  tmp/(1000.0*D(ir,ic,j))
-              EfromCrop = EfromCrop + tmp
-            end do
-
-!          (3) evaporation from soil surface
-
- 270        if(Es .lt. 0.1E-9) goto 290
-            if(Sst(ir,ic,iland) .le. 0.0) goto 275
-            EfromSurface     = amin1(Es, Sst(ir,ic,iland))
-275         if(Sst(ir,ic,iland) .lt. 0.0) Sst(ir,ic,iland) = 0.0
-            tmpEp = Es-EfromSurface 
-            if(tmpEp .le. 0.1E-9) goto 290
-            call ETsoil( w(ir,ic,iland,1), wfld(ir,ic), wrsd(ir,ic), kmoist )
-            tmp = tmpEp * kmoist
-            if(tmp .lt. 0.0) print *, 'wrong in EfromSoil', tmp
-            temp = amax1(0.0, 1000.0*(w(ir,ic,iland,1)-wrsd(ir,ic)-1.0E-6)*D(ir,ic,1))
-            tmp = amin1(tmp,temp)  
-            w(ir,ic,iland,1) = w(ir,ic,iland,1) - tmp/(1000.0*D(ir,ic,1))
-            EfromSurface = EfromSurface + tmp
-290        continue
-
-            eactd(ir,ic,idc) = eactd(ir,ic,idc) + (EfromCanopy+EfromCrop+EfromSurface) *land_ratio(ir,ic,iland)            ! mm
-            ecy(ir,ic,idc)   =  ecy(ir,ic,idc) + EfromCanopy *land_ratio(ir,ic,iland) 
-            ecp(ir,ic,idc)   =  ecp(ir,ic,idc) + EfromCrop *land_ratio(ir,ic,iland) 
-            ese(ir,ic,idc)   =  ese(ir,ic,idc) + EfromSurface*land_ratio(ir,ic,iland)                       ! added by gaobing
-            eactd(ir,ic,idc) = eactd(ir,ic,idc) + Eact * land_ratio(ir,ic,iland)        ! mm
- 888      continue
+                  do j=1,i
+                    y = (1.0-(1.0-para_r)*float(j-1)/float(i))*para_a
+                    call ETsoil(w(ir,ic,iland,j), wfld(ir,ic), wrsd(ir,ic), kmoist)
+                    tmp = y * Etr * kmoist
+                    tmp=amin1(tmp,temp) 
+                    w(ir,ic,iland,j) = w(ir,ic,iland,j) -  tmp/(1000.0*D(ir,ic,j))
+                    EfromCrop = EfromCrop + tmp
+                 end do
+                endif
+              endif
+!(3) evaporation from soil surface
+              if(Es .ge. 0.1E-9) then
+                if(Sst(ir,ic,iland) .gt. 0.0) then
+                  EfromSurface     = amin1(Es, Sst(ir,ic,iland))
+                end if
+                if(Sst(ir,ic,iland) .lt. 0.0) Sst(ir,ic,iland) = 0.0
+                tmpEp = Es-EfromSurface 
+                if(tmpEp .gt. 0.1E-9) then
+                  call ETsoil( w(ir,ic,iland,1), wfld(ir,ic), wrsd(ir,ic), kmoist )
+                  tmp = tmpEp * kmoist
+                  if(tmp .lt. 0.0) print *, 'wrong in EfromSoil', tmp
+                  temp = amax1(0.0, 1000.0*(w(ir,ic,iland,1)-wrsd(ir,ic)-1.0E-6)*D(ir,ic,1))
+                  tmp = amin1(tmp,temp)  
+                  w(ir,ic,iland,1) = w(ir,ic,iland,1) - tmp/(1000.0*D(ir,ic,1))
+                  EfromSurface = EfromSurface + tmp
+                end if
+              end if
+              eactd(ir,ic,idc) = eactd(ir,ic,idc) + (EfromCanopy+EfromCrop+EfromSurface) *land_ratio(ir,ic,iland)            ! mm
+              ecy(ir,ic,idc)   = ecy(ir,ic,idc) + EfromCanopy *land_ratio(ir,ic,iland) 
+              ecp(ir,ic,idc)   = ecp(ir,ic,idc) + EfromCrop *land_ratio(ir,ic,iland) 
+              ese(ir,ic,idc)   = ese(ir,ic,idc) + EfromSurface*land_ratio(ir,ic,iland)                       ! added by gaobing
+              eactd(ir,ic,idc) = eactd(ir,ic,idc) + Eact * land_ratio(ir,ic,iland)        ! mm
+            end if
+          enddo
         end do
- 999  end do
+      end do
 
-!          UZ, GW and surface routing
+!UZ, GW and surface routing
       srunoff2(isub,ihc)=0
       groundoff2(isub,ihc)=0
       soiloff2(isub,ihc)=0  !mqh
