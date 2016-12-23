@@ -7,7 +7,7 @@
       integer(i4)::ncol             ! number of columns of the whole area
       integer(i4)::year,month2,day,hour,month
       integer(i4)::iflai            ! 1 for using lai 
-      
+
       integer(i4):: idc            ! contineous day in a year (1-366)
       integer(i4):: ihc            ! contineous hour in a year (1-366*24)
       integer(i4):: hydroyear      ! year for hydro simulation

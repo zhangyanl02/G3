@@ -13,12 +13,6 @@
 
 
     subroutine hillslope_model(isub)
-      use global_para_mod,only:i4,r8,nrow,ncol,day,iflai
-      use hydro_para_mod,only:nflow,ngrid,grid_row,grid_col
-      use soil_para_mod,only:soil
-      use land_para_mod,only:land_ratio，LAImax，LAI
-      use forcing
-        
       implicit none
 
         integer(i4)::isub              ! sub-basin number

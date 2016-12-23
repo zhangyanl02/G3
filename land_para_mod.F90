@@ -12,7 +12,7 @@
       real(r8),allocatable::    LAImax(:)            ! maximum LAI in a year    LAImax(nv)
       real(r8),allocatable::    root(:)              ! root depth (m)   root(nv)
       integer(i4),allocatable:: landtyp(:)              ! landuse type of the whole area   landtyp(nv)
-      real(r8),allocatable:: land_ratio(:,:,:)    ! Area fraction of each landuse type  land_ratio(nrow,ncol,nv)
+      real(r8),allocatable::    land_ratio(:,:,:)    ! Area fraction of each landuse type  land_ratio(nrow,ncol,nv)
       integer(i4),allocatable:: land_use(:,:,:)    !land_use(nrow*10,ncol*10,1)
       
       

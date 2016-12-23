@@ -31,7 +31,7 @@
           print *,'wrong in calculating conductivity',w,conductivity_V
         end if
        return
-     end function conductivity_V    
+     end function conductivity_V
 
 
     SUBROUTINE runoff(isub,month,snow,temper,land_ratio,slope,length,Ds,Dg,Dr,anik,wsat,wrsd,wfld,&
@@ -439,7 +439,7 @@
             ps = tmpps/100.0 ! cm->m   !!why??
           end if
         return
-      end subroutine
+      end subroutine SuctionFromMoisture_V
       
 
 
@@ -464,7 +464,7 @@
         if(w .gt. wsat) w = wsat
         if(w .lt. wrsd) w = wrsd
         return
-      end subroutine
+      end subroutine MoistureFromSuction_V
       
 
 

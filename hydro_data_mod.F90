@@ -12,10 +12,8 @@
       integer(i4)::MNgauge          ! Number of Gauge          old
       integer(i4)::Maxgauge         ! Max_Number of Gauge      old +new
       integer(i4)::NNstation        ! rain station select; 1 for old, 2 for new, 3 for old+new
-      
+
       real(r8)::total_rech,total_qsub,total_ssub
-      
-      
       
       integer(i4),allocatable::nflow(:)                      ! total number of flow-intervals in a sub-basin    nflow(nc)
       integer(i4),allocatable::ngrid(:,:)                    ! the number of grid in each flow interval                    ----ngrid(nsub,nflow)
@@ -24,6 +22,7 @@
       character*6,allocatable::subbasin(:)                  ! name of each sub catchment                                         ----subbasin(nc)
       integer(i4),allocatable::psubbasin(:)                 ! the ids of sub catchments,e.g., 1001,2003                          ----psubbasin
       integer(i4),allocatable::nbasinup(:,:)                ! the rank of each up-basin of each sub catchment, e.g., 1,2,3,4     ----nbasinup(nc,8)
+      integer(i4),allocatable::inbasin(:,:)                ! the rank of each up-basin of each sub catchment, e.g., 1,2,3,4     ----nbasinup(nc,8)
       
       real(r8),allocatable::   area(:,:)                    ! area of the local grid (m2)------               area(nrow,ncol)
       real(r8),allocatable::   slp(:,:)               ! average slope of the local grid (ND)            slp(nrow,ncol)
@@ -31,11 +30,11 @@
       real(r8),allocatable::   Ds(:,:)       ! average depth of the topsoil (m)    Ds(nrow,ncol)
       real(r8),allocatable::   Dg(:,:)       ! average depth of the uncinfined acwuifer (m)     Dg(nrow,ncol)
       
-      real(r8),allocatable::dx(:,:)                          ! (rdx) length of flow intervals (m)                          ----dx(nsub,nflow)
-      real(r8),allocatable::dr(:,:)                          ! (drr) river depth of the flow interval (m)                  ----dr(nsub,nflow)
-      real(r8),allocatable::s0(:,:)                          ! river-bed slope of the flow interval                        ----s0(nsub,nflow)
-      real(r8),allocatable::b(:,:)                           ! (riverb) river width of the flow interval (m)               ----b(nsub,nflow)
-      real(r8),allocatable::roughness(:,:)                   ! river roughness (manning's coefficient) of the flow interval----(nsub,nflow)
+      real(r8),allocatable::   dx(:,:)                          ! (rdx) length of flow intervals (m)                          ----dx(nsub,nflow)
+      real(r8),allocatable::   dr(:,:)                          ! (drr) river depth of the flow interval (m)                  ----dr(nsub,nflow)
+      real(r8),allocatable::   s0(:,:)                          ! river-bed slope of the flow interval                        ----s0(nsub,nflow)
+      real(r8),allocatable::   b(:,:)                           ! (riverb) river width of the flow interval (m)               ----b(nsub,nflow)
+      real(r8),allocatable::   roughness(:,:)                   ! river roughness (manning's coefficient) of the flow interval----(nsub,nflow)
       
       real(r8),allocatable::   subarea(:)    ! total basin area     nc
       real(r8)::basinarea,fice, area_frac
@@ -58,12 +57,8 @@
       real(r8),allocatable::    GWst(:,:,:)          !   nrow,ncol,nv
       real(r8),allocatable::    Drw(:,:)          ! river water depth   nsub,nflow
       real(r8),allocatable::    discharge(:,:)    ! river flow discharge   nsub,nflow      
-      
-      real(r8),allocatable::    epd(:,:,:)         ! daily potential evaporation (mm)   nrow,ncol,366
-      real(r8),allocatable::    eactd(:,:,:)       ! daily actual evapotranspiration (mm)   nrow,ncol,366
-      real(r8),allocatable::    ecy(:,:,:)           !nrow,ncol,366
-      real(r8),allocatable::    ecp(:,:,:)    !nrow,ncol,366
-      real(r8),allocatable::    ese(:,:,:)   !nrow,ncol,366
+
+
       real(r8),allocatable::    runoffd(:,:,:)     ! daily runoff (mm)  !nrow,ncol,366
       real(r8),allocatable::    srunoff(:,:,:)   !nrow,ncol,366
       real(r8),allocatable::    groundoff(:,:,:)   !nrow,ncol,366
