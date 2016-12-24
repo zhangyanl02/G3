@@ -1,4 +1,4 @@
-    module hydro_para_mod
+    module hydro_data_mod
       use global_para_mod
       public
       save
@@ -59,13 +59,10 @@
       real(r8),allocatable::    discharge(:,:)    ! river flow discharge   nsub,nflow      
 
 
-      real(r8),allocatable::    runoffd(:,:,:)     ! daily runoff (mm)  !nrow,ncol,366
-      real(r8),allocatable::    srunoff(:,:,:)   !nrow,ncol,366
-      real(r8),allocatable::    groundoff(:,:,:)   !nrow,ncol,366
+
       
-      real(r8),allocatable:: srunoff2(:,:)   !mqh £¬²»Í¬²úÁ÷    nc,8800
-      real(r8),allocatable:: groundoff2(:,:)    !nc,8800
+
       
       integer(i4),allocatable::countt2(:)   !nsub
       
-    end module hydro_para_mod
+    end module hydro_data_mod

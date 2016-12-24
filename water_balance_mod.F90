@@ -34,6 +34,14 @@
       real(r8),allocatable:: ecp_month(:,:)      !nrow,ncol
       real(r8),allocatable:: ese_month(:,:)      !nrow,ncol
       
+      real(r8),allocatable:: srunoff2(:,:)   !mqh £¬²»Í¬²úÁ÷    nc,8800
+      real(r8),allocatable:: groundoff2(:,:)    !nc,8800
+      real(r8),allocatable:: soiloff2(:,:)     !nc,8800      
+      real(r8),allocatable::    runoffd(:,:,:)     ! daily runoff (mm)  !nrow,ncol,366
+      real(r8),allocatable::    srunoff(:,:,:)   !nrow,ncol,366
+      real(r8),allocatable::    groundoff(:,:,:)   !nrow,ncol,366
+      real(r8),allocatable::    soiloff(:,:,:)   !nrow,ncol,366
+      
       real(r8),allocatable::ecy(:,:,:)           !Evaporation from canopy   nrow,ncol,366
       real(r8),allocatable::ecp(:,:,:)           !Evaporation from crop !nrow,ncol,366
       real(r8),allocatable::ese(:,:,:)           !Evaporation from soil surface !nrow,ncol,366

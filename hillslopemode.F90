@@ -57,7 +57,7 @@
         real(r8)::    d1_alpha, d1_watern, d1_kg, d1_GWcs, d1_GWst, d1_Dgl
         real(r8)::    d1_Drw, d1_Sst, d1_qsub,d1_dt, d1_snow
         real(r8)::    d1_ssub  ! added by gaobing
-        real(r8)::    d1_deltz(nlayer), d1_k0(nlayer), d1_w(nlayer)
+
 
         character*2::    ch2        ! a 2-character variable
         character*4::    ch4        ! a 4-character variable
@@ -108,213 +108,15 @@
 
 
 
-!UZ, GW and surface routing
-      srunoff2(isub,ihc)=0
-      groundoff2(isub,ihc)=0
-      soiloff2(isub,ihc)=0  !mqh
-      do 1999 iflow=1, nflow(isub)
-        qin_tmp0 = 0.0
-        do ig=1,ngrid(isub,iflow)
-          ir=grid_row(isub,iflow,ig)
-          ic=grid_col(isub,iflow,ig)
-          isoil=soil(ir,ic)
-          fice = 1.00
-          fice=(temper+7.5)/7.5
-          fice=amax1(fice, 0.5)
-          fice=amin1(fice , 1.0)
-          qin_tmp=0.0
-          d1_slope  = slp(ir,ic)           ! m/m
-          d1_length = length(ir,ic)       ! meter           *1.3£¬added by mqh ,2014.4.17
-          d1_Ds     = Ds(ir,ic)            ! meter
-          d1_Dg     = Dg(ir,ic)                 ! meter
-          d1_Dr     = Dr(isub, iflow)             ! meter
-          d1_Drw    = Drw(isub, iflow)       ! meter
-          d1_kg     = kg(ir,ic)*fice       ! m/sec
-          d1_GWcs   = GWcs(ir,ic)          ! non
-          d1_dt     = dt       
-          d1_nuz    = layer(ir,ic)
-          do j = 1, d1_nuz
-            d1_deltz(j) = D(ir,ic,j)
-            d1_k0(j)    = k0(ir,ic,j)*fice      ! m/sec
-          end do
-          d1_wsat   = wsat(ir,ic)
-          d1_wrsd   = wrsd(ir,ic)
-          d1_wfld   = wfld(ir,ic)
-          d1_alpha  = alpha(ir,ic)
-          d1_watern = watern(ir,ic)
-          do 1800 iland = 1, nland
-            if(land_ratio(ir,ic,iland) .le. 0.0) goto 1800
-            d1_land_ratio = land_ratio(ir,ic,iland)
-            d1_anik = anik(iland)
-            if( d1_anik .lt. 0.0)  print *, "wrong anik..." 
-            if( d1_anik .lt. 1.0)  print *, "wrong anik",anik(iland) 
-            do j = 1, d1_nuz
-              d1_w(j) = w(ir,ic,iland,j)
-            end do
-            d1_Sst = Sst(ir,ic,iland)/1000.0
-            d1_Dgl = Dgl(ir,ic,iland)           
-            d1_GWst= GWst(ir,ic,iland)
-            d1_snow= snow(ir,ic,iland)
-            call runoff(isub, month, d1_snow, temper,d1_land_ratio,d1_slope, d1_length, d1_Ds,&
-                 d1_Dg ,d1_Dr,d1_anik,d1_wsat,d1_wrsd, d1_wfld,d1_alpha ,&
-                 d1_watern, d1_nuz,d1_deltz, d1_k0,d1_w,d1_kg,d1_GWcs,d1_GWst,d1_Dgl,d1_Drw,d1_Sst,d1_dt,d1_qsub,d1_ssub)
 
-            do j = 1, d1_nuz
-              w(ir,ic,iland,j) = d1_w(j)
-            end do
-            Sst(ir,ic,iland) = d1_Sst*1000.0
-            Dgl(ir,ic,iland) = d1_Dgl
-            GWst(ir,ic,iland)= d1_GWst
-            qin_tmp = qin_tmp + d1_qsub*land_ratio(ir,ic,iland)
-
-            groundoff2(isub,ihc)=groundoff2(isub,ihc)+ area(ir,ic)* (d1_qsub-d1_ssub)*land_ratio(ir,ic,iland)/length(ir,ic)         ! m3/s    
-            soiloff2(isub,ihc)=soiloff2(isub,ihc)+ area(ir,ic)* d1_ssub*land_ratio(ir,ic,iland)/length(ir,ic)         ! m3/s          
-            groundoff(ir,ic,idc) = groundoff(ir,ic,idc) + 1000.0* dt*d1_qsub*land_ratio(ir,ic,iland)/length(ir,ic)         ! mm
-            soiloff(ir,ic,idc)   = soiloff(ir,ic,idc)+1000.0*d1_ssub* land_ratio(ir,ic,iland)
-
-!          surface routing: steady constant sheet flow
-            soil_con_f = 1.0         ! soil conservation factor
-            detension = Sstmax(iland)*soil_con_f
-            detension = detension * 2.0
-            detension = detension * ((dLAI / LAImax(iland))**0.5)
-            detension = amax1(3.0, detension) 
-
-            water_depth = amax1(0.0, (Sst(ir,ic,iland)-detension) )   ! mm
-              q_hillslope = 0.0
-            if( water_depth .le. 0.01 .or. Drw(isub,iflow).ge. 1.0*Dr(isub,iflow) ) goto 1800
-
-            Sst(ir,ic,iland) = Sst(ir,ic,iland)-water_depth
-            water_depth = 0.001 * water_depth          !in meter, surface runoff
-
-            surface_n = surfn(iland) ! * sqrt(water_depth*1000.)
-            waterhead = slp(ir,ic) ! + water_depth/length(ir,ic)
-            power       = 1.6667
-
-            q_hillslope = dt * sqrt(waterhead)*water_depth**power/surface_n     ! m3/m, one hillslope
-            if(q_hillslope .le. 0.1E-20) q_hillslope = 0.0
-
-            if(iland.eq.6)    then! for agricultural fields
-              q_hillslope = q_hillslope * amax1(0.3, (1.0-LAI(ir,ic,month,2)/LAImax(iland)))
-            endif
-
-            q_hillslope = amin1(q_hillslope, water_depth*length(ir,ic))
-
-            water_depth = water_depth - q_hillslope/length(ir,ic)      
-            qin_tmp= qin_tmp + q_hillslope/dt * land_ratio(ir,ic,iland)         !m3/s/m, one hillslope
-!            update surface storage
-            Sst(ir,ic,iland) = Sst(ir,ic,iland)+1000.0*water_depth
-            water_depth = 0.0
-            srunoff2(isub,ihc) = srunoff2(isub,ihc) + q_hillslope*land_ratio(ir,ic,iland)/length(ir,ic)*area(ir,ic)/dt         ! m3/s,mqh
-1800          continue
-            qin_tmp  = qin_tmp *area(ir,ic)/length(ir,ic)! m3/s, one flow-interval
-            qin_tmp0 = qin_tmp0 + qin_tmp
-            runoffd(ir,ic,idc) = runoffd(ir,ic,idc) + 1000.0*qin_tmp*dt/area(ir,ic)
-       end do
-
-!       lateral inflow to the river
-        qin(iflow) = qin_tmp0 ! m3/s, total lateral inflow of one flow-interval
-!    monthly average soil moisture of the root depth
-        do 5444 ig = 1, ngrid(isub,iflow)
-            ir    = grid_row(isub,iflow,ig)
-            ic    = grid_col(isub,iflow,ig)
-            isoil = soil(ir,ic)
-          do 4888 iland = 1, nland
-            if(land_ratio(ir,ic,iland) .le. 0.0) goto 4888
-            tmp = 0.0
-            i   = 0
-            do j = 1, layer(ir,ic)
-              tmp = tmp + D(ir,ic,j)
-              i = i+1
-              if(tmp .ge. root(iland))     goto 4267  !Ô­ÀŽÊÇ4266
-
-            end do
-4267            tmp19921 = 0.0
-                tmp19922 = 0.0
-                tmp19923 = 0.0
-                tmp19924 = 0.0
-                tmp19925 = 0.0
-                tmp19926 = 0.0
-       
-            do j = 1, 1    !ÊÔÊÔÑ¡»ù²ãÍÁÈÀ±ÈœÏºÏÊÊ
-              tmp19921 = tmp19921 + D(ir,ic,j)     
-             
-            end do
-            do j = 1, 2    !ÊÔÊÔÑ¡»ù²ãÍÁÈÀ±ÈœÏºÏÊÊ
-              tmp19922 = tmp19922 + D(ir,ic,j)     
-             
-            end do
-            do j = 1, 3    !ÊÔÊÔÑ¡»ù²ãÍÁÈÀ±ÈœÏºÏÊÊ
-              tmp19923 = tmp19923 + D(ir,ic,j)     
-             
-            end do
-            do j = 1, 4    !ÊÔÊÔÑ¡»ù²ãÍÁÈÀ±ÈœÏºÏÊÊ
-              tmp19924 = tmp19924 + D(ir,ic,j)     
-             
-            end do
-            do j = 1, 5    !ÊÔÊÔÑ¡»ù²ãÍÁÈÀ±ÈœÏºÏÊÊ
-              tmp19925 = tmp19925 + D(ir,ic,j)     
-            end do
-            do j = 1, 6    !ÊÔÊÔÑ¡»ù²ãÍÁÈÀ±ÈœÏºÏÊÊ
-              tmp19926 = tmp19926 + D(ir,ic,j)     
-            end do
-4266        do j = 1, i
-              soil_month(ir,ic) = soil_month(ir,ic) + 
-     $                            land_ratio(ir,ic,iland)*
-     $                            (w(ir,ic,iland,j)-wrsd(ir,ic))/
-     $                            ((wsat(ir,ic)-wrsd(ir,ic))*24.0)*
-     $                             D(ir,ic,j)/tmp
-            end do   
-4888      continue
-5444    continue  
-1999      continue
 !     save monthly spatial distribution
-      if(isub.eq.end_sub .and. 
-     :   day.eq.dayinmonth(month) .and. hour.eq.24) then
+      if(isub.eq.end_sub .and. day.eq.dayinmonth(month) .and. hour.eq.24) then
         write(ch2, '(i2.2)') month
         write(ch4, '(i4.4)') hydroyear
-        do ii2 = 1, nsub
-          do iflow = 1, nflow(ii2)
-            do ig = 1, ngrid(ii2,iflow)
-              ir    = grid_row(ii2,iflow,ig)
-              ic    = grid_col(ii2,iflow,ig)
-              isoil = soil(ir,ic)
-                if(area(ir,ic).lt.0.0) soil_month(ir,ic) = -9999.0
-              if(area(ir,ic).lt.0.0) evap_month(ir,ic) = -9999.0
-              if(area(ir,ic).lt.0.0) ecy_month(ir,ic)  = -9999.0
-              if(area(ir,ic).lt.0.0) ecp_month(ir,ic)  = -9999.0
-              if(area(ir,ic).lt.0.0) ese_month(ir,ic)  = -9999.0
-              if(area(ir,ic).lt.0.0) runoff_month(ir,ic) = -9999.0
-              if(area(ir,ic).lt.0.0) grunoff_month(ir,ic) = -9999.0
-              if(area(ir,ic).lt.0.0) drunoff_month(ir,ic) = -9999.0
-              if(area(ir,ic).lt.0.0) srunoff_month(ir,ic) = -9999.0
-              soil_month(ir,ic) = soil_month(ir,ic)/
-     $                            float( dayinmonth(month) )   ! monthly mean
-              do i = idc-dayinmonth(month)+1, idc
-                evap_month(ir,ic) = evap_month(ir,ic) + eactd(ir,ic,i)/
-     $                              float( dayinmonth(month) ) ! monthly mean
-                ecy_month(ir,ic) = ecy_month(ir,ic) + ecy(ir,ic,i)/
-     $                              float( dayinmonth(month) ) ! monthly mean
-                ecp_month(ir,ic) = ecp_month(ir,ic) + ecp(ir,ic,i)/
-     $                              float( dayinmonth(month) ) ! monthly mean
-                ese_month(ir,ic) = ese_month(ir,ic) + ese(ir,ic,i)/
-     $                              float( dayinmonth(month) ) ! monthly mean
-                runoff_month(ir,ic)= runoff_month(ir,ic) + 
-     $               runoffd(ir,ic,i)/float(dayinmonth(month)) ! monthly mean
-                grunoff_month(ir,ic)= grunoff_month(ir,ic) + 
-     $               groundoff(ir,ic,i)/float(dayinmonth(month)) ! monthly mean
-                srunoff_month(ir,ic)= srunoff_month(ir,ic) + 
-     $               srunoff(ir,ic,i)/float(dayinmonth(month)) ! monthly mean
-                drunoff_month(ir,ic)= drunoff_month(ir,ic) + 
-     $               soiloff(ir,ic,i)/float(dayinmonth(month)) ! monthly mean
-              end do
-            end do
-          end do
-        end do
-        call strlen(result2_dir, ia1,ia2)
+
 
  
-        open(33,file = result2_dir(ia1:ia2)//  ! changed by xujijun
-     $                 'evap_'//ch4//ch2//'.asc')        
+        open(33,file = result2_dir(ia1:ia2)//'evap_'//ch4//ch2//'.asc')  ! changed by xujijun
           write(33,'(A, i16)') ncols,nnc
           write(33,'(A, i16)') nrows,nnr
           write(33,'(A, f16.3)') xllcorner,x0
@@ -399,7 +201,7 @@
       end if
         if(isub.eq.start_sub) then
           annual_rain  = 0.0
-            annual_runoff= 0.0
+          annual_runoff= 0.0
           annual_Eact  = 0.0
           annual_Cst   = 0.0
           annual_Ssts  = 0.0

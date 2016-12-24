@@ -86,8 +86,18 @@
               c1=0.31*dLAI
               c3=0.23+0.1*(dLAI/LAImax(iland))**0.5
               c5=0.23
+              c4=0.4
+              if(iland.eq.2) c4 = 0.06
+              if(iland.eq.3) c4 = 0.4
+              if(iland.eq.4) c4 = 0.2
+              if(iland.eq.5) c4 = 0.3
+              if(iland.eq.6) c4 = 0.4
+              if(iland.eq.7) c4 = 0.3
+              if(iland.eq.8) c4 = 0.08
+              if(iland.eq.9) c4 = 0.4
+              
               Etr = Ep*amin1(c2+c1,1.0)
-              Es  = (Ep*(c2+(1-c2)*(1-amin1(c2+c1,1.0))) -Etr*(1-amin1(c2+c1,1.0)))*&                  !???c4???
+              Es  = (Ep*(c2+(1-c2)*(1-amin1(c2+c1,1.0))) -Etr*(1-amin1(c2+c1,1.0)))*&
                 (1-exp(-c4*dLAI))+Ep*exp(-c4*dLAI)*(c5+(1.0-c5)*dLAI/LAImax(iland))**(1.0+c3)
               if(iland.eq.3) then  !baresoil
                 Es  = Ep*exp(-c4*dLAI)
@@ -145,7 +155,6 @@
               ecy(ir,ic,idc)   = ecy(ir,ic,idc) + EfromCanopy *land_ratio(ir,ic,iland) 
               ecp(ir,ic,idc)   = ecp(ir,ic,idc) + EfromCrop *land_ratio(ir,ic,iland) 
               ese(ir,ic,idc)   = ese(ir,ic,idc) + EfromSurface*land_ratio(ir,ic,iland)
-              eactd(ir,ic,idc) = eactd(ir,ic,idc) + Eact * land_ratio(ir,ic,iland)        ! mm                          ??????Eact 
             end if
           enddo
           end if
