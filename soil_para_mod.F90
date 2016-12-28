@@ -14,7 +14,4 @@
       real(r8),allocatable::    ksat1(:,:)        ! saturated hydraulic conductivity at surface (mm/h)     nrow,ncol
       real(r8),allocatable::    ksat2(:,:)     ! saturated hydraulic conductivity at bottom (mm/h)     nrow,ncol
       real(r8),allocatable::    anik(:)              ! soil anisotropy ratio anik(nv)
-
-
-      
     end module soil_para_mod
