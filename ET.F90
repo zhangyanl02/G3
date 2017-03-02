@@ -6,7 +6,7 @@
       use soil_para_mod,only:soil,wfld,wrsd
       use forcing_mod,only:pre_hour,temp_hour,Ep_hour,snow
       use land_para_mod,only:land_ratio,LAI,LAImax,root,nland
-      use hydro_para_mod,only:inbasin,Cst,Sst,layer,D,w
+      use hydro_data_mod,only:inbasin,Cst,Sst,layer,D,w
       use water_balance_mod,only:ecy,ecp,ese,eactd
       implicit none
       integer(i4),intent(in)::month,day,hour

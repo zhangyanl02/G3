@@ -87,3 +87,4 @@ SHAWDHM: $(OBJ)
 	
 clean:
 	rm -rf *.o *~ $(OBJ)
+	rm -rf *.mod *~ $(OBJ)
