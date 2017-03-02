@@ -1,4 +1,4 @@
-    module GBHM3
+    module hydro_mod
       use global_para_mod,only:i4,r8
       public
       save
@@ -834,8 +834,6 @@
         return
       end subroutine nkws
 
-
-
-    end module GBHM3
+    end module hydro_mod
 
 
