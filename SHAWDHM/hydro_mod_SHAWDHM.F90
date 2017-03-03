@@ -144,7 +144,7 @@ module hydro_mod
       call getunit(fileunit)
       do isub = 1, nsub
           infile = subbasin(isub)//'_river'
-	  !print *,isub,subbasin(isub),"  ",infile
+        !print *,isub,subbasin(isub),"  ",infile
           call strlen(infile, l1, l2)
           call strlen(para_dir, ll1, ll2)
           open(fileunit,file=trim(para_dir(ll1:ll2))//'riverpara/'//infile(l1:l2),status='old')

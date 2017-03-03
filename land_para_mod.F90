@@ -14,6 +14,7 @@
       integer(i4),allocatable:: landtyp(:)              ! landuse type of the whole area   landtyp(nv)
       real(r8),allocatable::    land_ratio(:,:,:)    ! Area fraction of each landuse type  land_ratio(nrow,ncol,nv)
       integer(i4),allocatable:: land_use(:,:,:)    !land_use(nrow*10,ncol*10,1)
+      real(r8),allocatable::    Kcrop(:)             !evaporation coefficient of crop   Kcrop(nv)
       
       
       

@@ -5,7 +5,8 @@
       integer,parameter::r8=4
       integer(i4)::nrow             ! number of rows of the whole area
       integer(i4)::ncol             ! number of columns of the whole area
-      integer(i4)::year,month2,day,hour,month
+      integer(i4)::year,month2,day,month
+      integer(i4)::hour             ! hour in a day   (1-24)
       integer(i4)::iflai            ! 1 for using lai 
 
       integer(i4):: idc            ! contineous day in a year (1-366)

@@ -3,6 +3,142 @@
       public
       save
     contains
+    
+    
+    subroutine read_hydro_para(para_dir,nhrpdt)
+      use shr_kind_mod, only:r8 => shr_kind_r8,i4 => shr_kind_i4,i8 => shr_kind_i8,r4=> shr_kind_r4      
+      implicit none
+      character*200,intent(in)::para_dir
+      integer(i4),intent(in)::nhrpdt
+      dthydro=nhrpdt*3600.0
+      !call initial_subcatchment(para_dir)
+      call read_river_para(para_dir)
+      return 
+    end subroutine read_hydro_para
+    
+    
+    
+    
+!##########################
+!##########################
+    subroutine initial_subcatchment(para_dir)
+      use shr_kind_mod, only:r8 => shr_kind_r8,i4 => shr_kind_i4,i8 => shr_kind_i8,r4=> shr_kind_r4
+      implicit none
+      character*200,intent(in)::para_dir
+      integer::i,j,k,fileunit
+      character(200)::atmp
+      integer(i4)::l1,l2,subcount,iostatus
+      character*4::ch4 
+      character*200::subbasinfile
+      call strlen(para_dir,l1,l2)
+      subbasinfile=trim(para_dir(l1:l2))//'subbasin.dat'
+      call getunit(fileunit)
+      open(fileunit,file = subbasinfile, status='old')
+      subcount=0
+      iostatus=1
+      do while(iostatus.ge.0)	  
+        read(fileunit,*,iostat=iostatus) atmp
+        subcount=subcount+1
+      end do
+      close(fileunit)
+      subcount=subcount-1
+      nsub=subcount
+
+      call strlen(para_dir, l1, l2)
+      open(fileunit,file=trim(para_dir(l1:l2))//'riverpara/'//'maxnp',status='old')
+      read(fileunit,*) nflowmax,ngridmax
+      close(fileunit)
+
+      allocate(subbasin(nsub))
+      allocate(psubbasin(nsub))
+      allocate(pbasinup(nsub,8))
+      allocate(nbasinup(nsub,8))
+      !allocate(nextbasinrow(nsub),nextbasincol(nsub),nextbasin(nsub))
+      allocate(nflow(nsub))
+      allocate(ngrid(nsub,nflowmax))
+      allocate(dx(nsub,nflowmax))
+      allocate(s0(nsub,nflowmax))
+      allocate(b(nsub,nflowmax))
+      allocate(roughness(nsub,nflowmax))
+      allocate(Dr(nsub,nflowmax))
+      allocate(grid_row(nsub,nflowmax,ngridmax))
+      allocate(grid_col(nsub,nflowmax,ngridmax))
+      allocate(hrr(nsub,nflowmax))
+      allocate(q1(nsub,nflowmax))
+      allocate(q2(nsub,nflowmax))	
+      allocate(qlin1(nsub,nflowmax))
+      allocate(qlin2(nsub,nflowmax))
+      allocate(qin(nsub))
+      allocate(area_sub(nsub))
+  
+      open(fileunit,file = subbasinfile, status='old')
+      do i = 1,nsub
+        read(fileunit,*)nsub,psubbasin(i),(pbasinup(i,j),j=1,8)!,nextbasinrow(i),nextbasincol(i),nextbasin(i)
+      enddo
+      close(fileunit)
+
+
+      do i =1,nsub
+        write(ch4,'(i4.4)') psubbasin(i)
+        subbasin(i)='ws'//ch4
+      enddo
+      
+      nbasinup=0     
+      do i = 1,nsub
+        do k =1,8
+          if(pbasinup(i,k)>0) then
+            do j =1,nsub
+              if(psubbasin(j)== pbasinup(i,k)) then
+                nbasinup(i,k)=j 
+              endif
+            enddo
+          endif
+        enddo
+      enddo  
+      call retunit(fileunit)
+    end subroutine
+
+
+
+
+    subroutine read_river_para(para_dir)
+      use shr_kind_mod, only:r8 => shr_kind_r8,i4 => shr_kind_i4,i8 => shr_kind_i8,r4=> shr_kind_r4
+      implicit none
+      character*200,intent(in)::para_dir
+      integer(i4)::isub,l1,l2,ll1,ll2,iflow,j,fileunit
+      character*200::infile
+      call getunit(fileunit)
+      do isub = 1, nsub
+          infile = subbasin(isub)//'_river'
+        !print *,isub,subbasin(isub),"  ",infile
+          call strlen(infile, l1, l2)
+          call strlen(para_dir, ll1, ll2)
+          open(fileunit,file=trim(para_dir(ll1:ll2))//'riverpara/'//infile(l1:l2),status='old')
+          read(fileunit,*) nflow(isub)
+          do iflow = 1, nflow(isub)
+            read(fileunit,*) ngrid(isub,iflow),dx(isub,iflow),s0(isub,iflow),b(isub,iflow),roughness(isub,iflow),Dr(isub,iflow)
+            if(dx(isub,iflow) .lt. 0.1) dx(isub,iflow) = 2000.0
+            if(s0(isub,iflow) .le. 0 ) then   
+              s0(isub,iflow)=0.00001
+              print *, 'wrong in s0',isub,iflow,s0(isub,iflow)  
+            endif  
+            if(s0(isub,iflow).eq.-9999.0) then 
+              s0(isub,iflow)=0.00001 
+              print *, 'wrong in s0',isub,iflow,s0(isub,iflow)  
+            endif
+            if(s0(isub,iflow).le.0.1E-5) s0(isub,iflow) = 0.1E-5
+
+            if(ngrid(isub,iflow) .gt. ngridmax) then
+              print *,'more than np grids:',ngrid(isub,iflow),isub,iflow,ngridmax
+            endif
+            read(fileunit,*) (grid_row(isub,iflow,j),grid_col(isub,iflow,j),j = 1, ngrid(isub,iflow))
+          end do
+          close(fileunit)
+          call retunit(fileunit)
+      end do
+    end subroutine
+
+
 
 !      calculate soil hydraulic conductivity by Van Genuchten's equation                                 
       function conductivity_V(k0,wsat,wrsd,n,w)

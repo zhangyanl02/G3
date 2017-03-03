@@ -14,7 +14,7 @@
       integer(i4)::NNstation        ! rain station select; 1 for old, 2 for new, 3 for old+new
 
       real(r8)::total_rech,total_qsub,total_ssub
-      
+      integer(i4),allocatable::pbasinup(:,:)                 ! the ids of up-basins for each sub catchment,upbasin of p number
       integer(i4),allocatable::nflow(:)                      ! total number of flow-intervals in a sub-basin    nflow(nc)
       integer(i4),allocatable::ngrid(:,:)                    ! the number of grid in each flow interval                    ----ngrid(nsub,nflow)
       integer(i4),allocatable::grid_row(:,:,:)               ! the row number of each grid                                 ----grid_row(nsub,nflow,ngrid)
@@ -25,10 +25,14 @@
       integer(i4),allocatable::inbasin(:,:)                ! the rank of each up-basin of each sub catchment, e.g., 1,2,3,4     ----nbasinup(nc,8)
       
       real(r8),allocatable::   area(:,:)                    ! area of the local grid (m2)------               area(nrow,ncol)
-      real(r8),allocatable::   slp(:,:)               ! average slope of the local grid (ND)            slp(nrow,ncol)
+      real(r8),allocatable::   ele(:,:)                     ! elevation of the local grid (m)------               area(nrow,ncol)
+      real(r8),allocatable::   slp(:,:)                     ! average slope of the local grid (ND)            slp(nrow,ncol)
       real(r8),allocatable::   length(:,:)   ! average hillslope length (m)        length(nrow,ncol)
       real(r8),allocatable::   Ds(:,:)       ! average depth of the topsoil (m)    Ds(nrow,ncol)
       real(r8),allocatable::   Dg(:,:)       ! average depth of the uncinfined acwuifer (m)     Dg(nrow,ncol)
+
+      
+      
       
       real(r8),allocatable::   dx(:,:)                          ! (rdx) length of flow intervals (m)                          ----dx(nsub,nflow)
       real(r8),allocatable::   dr(:,:)                          ! (drr) river depth of the flow interval (m)                  ----dr(nsub,nflow)
