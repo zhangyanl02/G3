@@ -3,6 +3,7 @@
       public
       save
       integer(i4)::ns                              ! number of soil types
+      integer(i4)::nlayer
       integer(i4):: nsoil                          ! number of soil types in whole area
       integer(i4),allocatable::soiltyp(:)          ! Soil type of the whole area       soiltyp(ns)
       integer(i4),allocatable:: soil(:, :)         ! soil code of each grid  soil(nrow, ncol)

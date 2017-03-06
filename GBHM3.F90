@@ -1,13 +1,14 @@
     program GBHM3
-      use hydro_mod,only:subbasin,nsub,psubbasin,pbasinup,nbasinup,area,ele,slp,length,Ds,Dg,&
+      use hydro_data_mod,only:subbasin,nsub,psubbasin,pbasinup,nbasinup,area,ele,slp,length,Ds,Dg,&
                          nflow,dx,Dr,s0,b,roughness,ngrid,grid_row,grid_col,Sstmax,surfn,&
-                         kg,GWcs
+                         kg,GWcs,nx,np,nc,inicon,MNgauge,Maxgauge,NNstation,nhrpdt
       use forcing_mod,only:rain_daily,pre_hour,tmin_daily,tmax_daily,evap_daily,snow
-      use soil_para_mod,only:soiltyp,soil,nsoil,anik,wsat,wfld,wrsd,alpha,watern,ksat1,ksat2
+      use soil_para_mod,only:soiltyp,soil,nsoil,anik,wsat,wfld,wrsd,alpha,watern,ksat1,ksat2,ns,nlayer
       use land_para_mod,only:landtyp,land_ratio,land_use,nland,NDVI,yndvi,LAI,Kcanopy,LAImax,Kcrop,&
-                              root
-      use global_para_mod,only:dt,year,month,day,hour,dayinmonth,hydroyear,startmonth,endmonth,startday,endday,&
-                              idc,ihc,start,finish,start_sub,end_sub
+                              root,nv
+      use global_para_mod,only:i4,r8,dt,year,month,day,hour,dayinmonth,hydroyear,startmonth,endmonth,startday,endday,&
+                              idc,ihc,start,finish,start_sub,end_sub,nrow,ncol,startyear,endyear,iflai
+      use GBHM3Lib_mod
       implicit none
       integer(i4)::isub,iflow,isoil,iland,year_tmp
       character*200::landuse            ! name of land use
@@ -56,12 +57,8 @@
       real:: ran0
       integer:: ii1,ig
       
-      data dayinmonth /31,28,31,30,31,30,31,31,30,31,30,31/
-      data startmonth /1/
-      data startday   /1/
-      data endmonth   /12/
-      data endday     /31/
-      para_dir   ="../parameter/"
+
+      para_dir   ="/home/zhangyanlin/model/gbhm/model/model_test_data/hydropara/"
       data_dir   ="../data/"
       dem_dir   ="../dem/"
       result1_dir="../result_river/"
@@ -80,9 +77,20 @@
       
       call initial_subcatchment(para_dir)       !allocate memory for the variables before used
       call read_hydro_para(para_dir,nhrpdt)
+      call read_veg_para(para_dir)
       
       start_sub = 1
       end_sub   = 153
-      
+
+!      parameter (nrow = 106, ncol = 78)
+!      parameter (nc = 153, nx = 300, np = 500)
+!  parameter (nv = 9,  ns = 3,  nlayer = 10)
+!  parameter (startyear =2000, endyear =2000)
+!  parameter (inicon = 0)
+!  parameter (MNgauge = 10)
+!  parameter (NNstation = 3)
+!    parameter (Maxgauge = 19)
+!  parameter (iflai = 0)     
+
     end program GBHM3
 

@@ -30,7 +30,7 @@ module hydro_mod
       real(r8),allocatable::q1(:,:)                          ! discharge of last time step (m^3/s)                         ----q1(nsub,nflow)
       real(r8),allocatable::q2(:,:)                          ! discharge of current time step (m^3/s)                      ----q2(nsub,nflow)
       real(r8),allocatable::qlin1(:,:)                       ! lateral inflow of last time step (m^3/m/s)                  ----qlin1(nsub,nflow)
-      real(r8),allocatable::qlin2(:,:)	                   ! lateral inflow of current time step (m^3/m/s)	         ----qlin2(nsub,nflow)
+      real(r8),allocatable::qlin2(:,:)                       ! lateral inflow of current time step (m^3/m/s)               ----qlin2(nsub,nflow)
       real(r8),allocatable::hhr(:,:)                         ! depth of river water                                        ----hhr(nsub,nflow)
       integer(i4),parameter::sceflag = 0                     ! =1 for sce optimization; = 0 for no sce optimization. 
       real(r8):: basin_area

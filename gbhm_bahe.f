@@ -42,7 +42,6 @@ c
 c#######################################################################
 c
       implicit none
-      include 'dims2.inc'
 
 
 
@@ -54,155 +53,9 @@ c
 
 
 
-c
-c#######################################################################
-c
-c           generate subcatchment name from kfs.dat
-c                       Pfafstetter Scheme
-c
-c#######################################################################
-c
-	call strlen(para_dir,ib1,ib2)
-	open(1,file = para_dir(ib1:ib2)//'subbasin.dat', status='old')
-c	open(1,file = para_dir(ib1:ib2)//'kfs.dat', status='old')
-c	read(1,*) atmp, nlevel
-c	read(1,*)
-c	do level = 1, nlevel-1
-c	  if(level .eq.1) then  ! Level 1
-c	    read(1,*)
-c	    read(1,*) atmp, (kfs1(l1), l1=1,9)
-c	  elseif(level .eq. 2) then ! Level 2
-c	    read(1,*)
-c	    do l1=1,9
-c	      if(kfs1(l1).eq.1) read(1,*) atmp, (kfs2(l1,l2), l2=1,9)
-cc	–ﬁ∏ƒ”⁄2006.4.14
-c	      if(kfs1(l1).ne.1) read(1,*) 
-c	    end do
-c	  elseif(level .eq. 3) then ! Level 3
-c		read(1,*)
-c	    do l1=1,9
-c	      if(kfs1(l1).eq.1) then
-c                do l2=1,9
-c                  if(kfs2(l1,l2) .eq. 1)  read(1,*) atmp, 
-c     :                 (kfs3(l1,l2,l3), l3=1,9)
-c                end do
-c	      endif
-c	    end do
-c	  endif
-c	end do
-c	close(1)
-c      
-         do i = 1,nc
-        read(1,*)nsub,psubbasin(i),(pbasinup(i,j),j=1,3)
-
-	  enddo
-	   close(1)
-c	nsub=0
-c	do l1 = 9, 1, -1        ! Level 1
-c	  if(kfs1(l1) .eq. 0) then
-c	    nsub=nsub+1
-c	    subbasin(nsub)='ws'//char(48+l1)//
-c     :           char(48+0)//char(48+0)
-c           print *,nsub,'   ',subbasin(nsub)
-c	  else
-c	    do l2 = 9, 1, -1    ! Level 2
-c              if(kfs2(l1,l2) .eq. 0) then
-c	        nsub=nsub+1
-c	        subbasin(nsub)='ws'//char(48+l1)//char(48+l2)//
-c     :               char(48+0)
-c              print *,nsub,'   ',subbasin(nsub)
-c	      else
-c                do l3 = 9, 1, -1 ! Level 3
-c                  nsub=nsub+1
-c	            subbasin(nsub)='ws'//char(48+l1)//
-c     :                 char(48+l2)//char(48+l3)
-c                 print *,nsub,'   ',subbasin(nsub)
-c               
-c                end do
-c              endif
-c	    end do
-c	  endif
-c	end do
-
-           nbasinup=0
-        do i =1,nsub
-	      write(ch4,'(i4.4)')psubbasin(i)
-          subbasin(i)='ws'//ch4
-	 	  enddo
-          do i = 1,nsub
-               do k =1,4
-                  if(pbasinup(i,k) >0) then
-                      do j =1,nsub
-                         if(psubbasin(j)== pbasinup(i,k)) then
-                            nbasinup(i,k)=j                    
-	                      
-	                   endif
-	                enddo
-	            endif
-	         enddo
-	    enddo
 
 
-	print *,'number of sub-catchment:',nsub  ! added by gaobing 2013
-      print * ,'ok1, finish of subbasin.dat', para_dir
-c	pause 
 
-c
-c
-c#######################################################################
-c
-c     Read land vegetation parameters
-c
-c#######################################################################
-c
- 	para_dir   ="../parameter/"
-
-      open(1, file = para_dir(ib1:ib2)//'vege_para.dat',
-     :        status='old')
-	read(1,*)
-	read(1,*)
-	i = 1
-15    read(1,*,end=25) iland, Kcanopy(i), LAImax(i), kcrop(i), 
-     :                  root(i),anik(i), Sstmax(i), surfn(i), landuse
-c      print *, iland, Kcanopy(i), LAImax(i), kcrop(i), 
-c     +                  root(i),anik(i), Sstmax(i), surfn(i), landuse 
-c      Sstmax(i)=Sstmax(i)
-	i = i + 1
-	goto 15
-25	close(1)
-	nland = i-1
-	print *,'landuse types:',nland
-      print *,'ok2, finish of vegetation.dat', para_dir
-c	pause 
-
-c
-c
-c#######################################################################
-c
-c     Read soil parameters
-c
-c#######################################################################
-c
-c	open(1, file = para_dir(ib1:ib2) // 'soil_water_para.dat',
-c     :       status = 'old')
-c	read(1,*)
-c	read(1,*)
-c	i = 1
-c35    read(1,*, end=45) isoil,wsat(i), wrsd(i), alpha(i), watern(i),  
-c     :                  ksat1(i), ksat2(i), kg(i), GWcs(i)
-
-C      print *, i,isoil, wsat(i), wrsd(i), alpha(i), watern(i),  
-C    +                  ksat1(i), ksat2(i), kg(i), GWcs(i)
-C     pause 
-
-	
-c
-c#######################################################################
-c
-c	Read base maps
-c
-c#######################################################################
-c
   	call strlen(dem_dir,ib1,ib2)
 
 	do i = 1, 6
@@ -308,8 +161,6 @@ c
       print * ,'ok7, finish of slope.asc'
       print * ,'ok8, finish of soil_unit.asc'
       print * ,'ok9, finish of soil_depth.asc'
-c	pause 
-
   	call strlen(para_dir,ib1,ib2)
 	open(3,file=para_dir(ib1:ib2)//'soil_code.txt', status='old')
 	read(3,*)
@@ -557,61 +408,6 @@ c	pause
 c
 c
 
-c#######################################################################
-c
-c	Read subbasin parameters
-c
-c#######################################################################c
-	print *,'Reading catchment parameters ...'
-      do isub = 1, nsub
-        infile = subbasin(isub) // '_river'
-c	  print *,isub,subbasin(isub),infile
-c	  pause
-        call strlen(infile, ia1, ia2)
-        open(3,file=para_dir(ib1:ib2)//infile(ia1:ia2),status='old')
-        read(3,*) nflow(isub)
-c	  print *, isub, nflow(isub)
-c	  pause
-        do iflow = 1, nflow(isub)
-
-          read(3,*) ngrid(isub,iflow),
-     :              dx(isub,iflow),s0(isub,iflow),b(isub,iflow),
-     :              roughness(isub,iflow),Dr(isub,iflow)
-      roughness(isub,iflow)=roughness(isub,iflow)*2.0
-cc		Dr(isub,iflow) = 1.5 * Dr(isub,iflow)					!  È«©6
-c	    print *, ngrid(isub,iflow),
-c     :              dx(isub,iflow),s0(isub,iflow),b(isub,iflow),
-c     :              roughness(isub,iflow),Dr(isub,iflow)
-		if( dx(isub,iflow).lt.0.1) dx(isub,iflow) = 3000.0
-               dx(isub,iflow) = dx(isub,iflow)*1.50
-       if(s0(isub,iflow).eq.0) then   ! added by xujijun 20051104
-	     s0(isub,iflow)=0.00001
-		 print *, 'wrong in s0',s0(isub,iflow)  
-       endif  
-	 if(s0(isub,iflow).eq.-9999.0) then ! added by xujijun 20051104
-	     s0(isub,iflow)=0.00001 
- 		 print *, 'wrong in s0',s0(isub,iflow)  
-	 endif
-
-
-c	    b(isub,iflow)=2.0*b(isub,iflow)
-c	    Dr(isub,iflow)=1.5*Dr(isub,iflow)
-
-	    if(ngrid(isub,iflow) .gt. np) then
-          print *,'more than np grids:',ngrid(isub,iflow),isub,iflow,np
-          endif
-
-	    read(3,*) (grid_row(isub,iflow,j),grid_col(isub,iflow,j),
-     :               j = 1, ngrid(isub,iflow))
-          if(s0(isub,iflow).le.0.1E-5) s0(isub,iflow) = 0.1E-5
-        end do
-        close(3)
-	end do
-      print * ,'ok12, finish of ws000_river'
-c	pause 
-
-c 
-c
 c#######################################################################
 c
 c	             read initial snow depth

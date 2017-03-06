@@ -22,7 +22,11 @@
       integer(i4):: start_sub, end_sub  ! for partial simulation of a basin
       real(r8)::    dt             ! time step (second)
       integer(i4):: dayinmonth(12) ! days of a month
-      
+      data dayinmonth /31,28,31,30,31,30,31,31,30,31,30,31/
+      data startmonth /1/
+      data startday   /1/
+      data endmonth   /12/
+      data endday     /31/
       character*200::para_dir    ! directory for parameters
       character*200::result2_dir ! directory for storing simulation result
       character*200::simul_dir   ! directory for storing temporal variables

@@ -3,6 +3,7 @@
       public
       save
       integer(i4)::nsub             ! number of sub-catchments  (nc in dims2.inc)
+      integer(i4)::nc               ! number of sub-catchments 
       integer(i4)::nx               ! number of flow interval in a sub-catchment
       integer(i4)::np               ! number of grids in a flow-interval
       integer(i4)::nlayer           ! number of UZ layers
@@ -12,7 +13,9 @@
       integer(i4)::MNgauge          ! Number of Gauge          old
       integer(i4)::Maxgauge         ! Max_Number of Gauge      old +new
       integer(i4)::NNstation        ! rain station select; 1 for old, 2 for new, 3 for old+new
-
+      integer(i4)::nflowmax,ngridmax
+      
+      
       real(r8)::total_rech,total_qsub,total_ssub
       integer(i4),allocatable::pbasinup(:,:)                 ! the ids of up-basins for each sub catchment,upbasin of p number
       integer(i4),allocatable::nflow(:)                      ! total number of flow-intervals in a sub-basin    nflow(nc)
@@ -59,14 +62,18 @@
       real(r8),allocatable::    Sst(:,:,:)           ! surface storage   nrow,ncol,nv
       real(r8),allocatable::    Dgl(:,:,:)           ! depth to groundwater level in the grid    nrow,ncol,nv
       real(r8),allocatable::    GWst(:,:,:)          !   nrow,ncol,nv
-      real(r8),allocatable::    Drw(:,:)          ! river water depth   nsub,nflow
+      real(r8),allocatable::    Drw(:,:)             ! river water depth   nsub,nflow
+      real(r8),allocatable::    hrr(:,:)                         ! depth of river water                                        ----hrr(nsub,nflow)
+      real(r8),allocatable::    hhr(:,:)                         ! depth of river water                                        ----hhr(nsub,nflow)
       real(r8),allocatable::    discharge(:,:)    ! river flow discharge   nsub,nflow      
 
-
-
-      
-
-      
+      real(r8),allocatable::q1(:,:)                          ! discharge of last time step (m^3/s)                         ----q1(nsub,nflow)
+      real(r8),allocatable::q2(:,:)                          ! discharge of current time step (m^3/s)                      ----q2(nsub,nflow)
+      real(r8),allocatable::qlin1(:,:)                       ! lateral inflow of last time step (m^3/m/s)                  ----qlin1(nsub,nflow)
+      real(r8),allocatable::qlin2(:,:)                       ! lateral inflow of current time step (m^3/m/s)               ----qlin2(nsub,nflow)
+      real(r8),allocatable::area_sub(:)                      ! basin-area, subcatchment area
+      real(r8)::dthydro                                      ! the length of time interval, in sencond(s),need to be initianized at the beginning
+      integer(i4)::nhrpdt
       integer(i4),allocatable::countt2(:)   !nsub
       
     end module hydro_data_mod

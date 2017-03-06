@@ -3,3 +3,6 @@ gfortran -c global_para_mod.F90 forcing_mod.F90 soil_para_mod.F90 land_para_mod.
 
 
 gfortran -c global_para_mod.F90 hydro_mod.F90
+
+
+gfortran -o GBHM3.exe global_para_mod.F90 forcing_mod.F90 soil_para_mod.F90 land_para_mod.F90 hydro_data_mod.F90 GBHM3Lib_mod.F90 GBHM3.F90
