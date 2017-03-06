@@ -79,18 +79,6 @@
       integer(i4)::i,iland
       call strlen(para_dir, l1, l2)
       open(14, file = para_dir(l1:l2)//'vege_para.dat',status='old')
-      read(14,*)
-      read(14,*)
-      subcount=0
-      iostatus=1
-      do while(iostatus.ge.0)
-        read(14,*,iostat=iostatus) atmp
-        subcount=subcount+1
-      end do
-      close(14)
-      subcount=subcount-1
-      nland=subcount
-      open(14, file = para_dir(l1:l2)//'vege_para.dat',status='old')
       read(1,*)
       read(1,*)
       i = 1
@@ -102,12 +90,14 @@
       print *,'ok2, finish of vegetation.dat', para_dir
     end subroutine read_veg_para
 
+
     subroutine initial_subcatchment(para_dir)
       use global_para_mod,only:i4,r8
       use hydro_data_mod,only:nsub,ngridmax,nflowmax,nrow,ncol,subbasin,psubbasin,pbasinup,nbasinup,&
             nflow,ngrid,dx,s0,b,roughness,Dr,grid_row,grid_col,Drw,q1,q2,qlin1,qlin2,qin,area_sub,&
             nhrpdt,area,ele,slp,length,ds,dg,layer,d,k0,w,kg,gwcs,cst,sst,dgl,gwst,nlayer
       use land_para_mod,only:nv,nland,NDVI,yndvi,LAI,Kcanopy,root,landtyp,land_ratio,land_use,Kcrop
+      use soil_para_mod,only:soiltyp,soil,wsat,wrsd,wfld,alpha,watern,ksat1,ksat2,anik,ns
       implicit none
       character*200,intent(in)::para_dir
       integer::i,j,k,fileunit
@@ -138,6 +128,19 @@
       read(14,*) atemp,ncol
       read(14,*) atemp,nrow
       close(14)
+      open(14, file = para_dir(l1:l2)//'vege_para.dat',status='old')
+      read(14,*)
+      read(14,*)
+      subcount=0
+      iostatus=1
+      do while(iostatus.ge.0)
+        read(14,*,iostat=iostatus) atmp
+        subcount=subcount+1
+      end do
+      close(14)
+      subcount=subcount-1
+      nland=subcount
+      
       allocate(subbasin(nsub))
       allocate(psubbasin(nsub))
       allocate(pbasinup(nsub,8))
@@ -158,7 +161,7 @@
       allocate(qlin1(nsub,nflowmax))
       allocate(qlin2(nsub,nflowmax))
       allocate(qin(nsub))
-      allocate(area_sub(nsub))      
+      allocate(area_sub(nsub))
       if(.not. allocated(area)) allocate(area(nrow,ncol))
       if(.not. allocated(ele)) allocate(ele(nrow,ncol))
       if(.not. allocated(slp)) allocate(slp(nrow,ncol))
@@ -176,6 +179,7 @@
       if(.not. allocated(Dgl)) allocate(Dgl(nrow,ncol,nv))
       if(.not. allocated(GWst)) allocate(GWst(nrow,ncol,nv))
       
+      ! Allocate the space for the vegetation variables
       if(.not. allocated(NDVI)) allocate(NDVI(nrow,ncol,12,3))
       if(.not. allocated(yndvi)) allocate(yndvi(nrow,ncol,12,3))
       if(.not. allocated(LAI)) allocate(LAI(nrow,ncol,12,4))
@@ -185,6 +189,18 @@
       if(.not. allocated(land_ratio)) allocate(land_ratio(nrow,ncol,nland))
       if(.not. allocated(land_use)) allocate(land_use(nrow*10,ncol*10,1))
       if(.not. allocated(Kcrop)) allocate(Kcrop(nland))
+
+      ! Allocate the space for the soil parameter variables
+      if(.not. allocated(soiltyp)) allocate(soiltyp(ns))
+      if(.not. allocated(soil)) allocate(soil(nrow,ncol))
+      if(.not. allocated(wsat)) allocate(wsat(nrow,ncol))
+      if(.not. allocated(wrsd)) allocate(wrsd(nrow,ncol))
+      if(.not. allocated(alpha)) allocate(alpha(nrow,ncol))
+      if(.not. allocated(wfld)) allocate(wfld(nrow,ncol))
+      if(.not. allocated(watern)) allocate(watern(nrow,ncol))
+      if(.not. allocated(ksat1)) allocate(ksat1(nrow,ncol))
+      if(.not. allocated(ksat2)) allocate(ksat2(nrow,ncol))
+      if(.not. allocated(anik)) allocate(anik(nland))
 
       open(14,file = subbasinfile, status='old')
       do i = 1,nsub
