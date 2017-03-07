@@ -17,7 +17,332 @@
         endif
       end do
     end subroutine
+    
+    subroutine read_soil_para()
+      use global_para_mod,only:i4,r8
+      use soil_para_mod,only:ksat1
+      implicit none
+      integer(i4)::i,l1,l2
       
+      call strlen(soil_para_file,l1,l2)
+	do i = 1, 6
+	  if(i.eq.1) infile = 'thsgm1k.asc'
+	  if(i.eq.2) infile = 'thr1k.asc'
+	  if(i.eq.3) infile = 'k01k.asc'
+	  if(i.eq.4) infile = 'k11k.asc'
+c	  if(i.eq.5) infile = 'ksg_heihe.asc'
+	  if(i.eq.5) infile = 'alpha1k.asc'
+        if(i.eq.6) infile = 'n1k.asc'
+  	  call strlen(infile,ia1,ia2)
+	open(11,file=soil_dir(ib1:ib2)//infile(ia1:ia2),status='old')
+       
+
+	  
+	  read(11,'(A, i16)') ncols,nnc
+ 
+	  read(11,'(A, i16)') nrows,nnr
+	  read(11,'(A, f16.3)') xllcorner,x0
+	  read(11,'(A, f16.3)') yllcorner,y0
+	  read(11,'(A, f16.0)') cellsize,gridsize
+	  read(11,'(A, f8.0)') nodata,znodata
+
+	  do ir=1,nnr
+	    if(i.eq.1) read(11,*) (wsat(ir,ic),     ic=1,nnc)
+	    if(i.eq.2) read(11,*) (wrsd(ir,ic),     ic=1,nnc)
+	    if(i.eq.3) read(11,*) (ksat1(ir,ic),    ic=1,nnc)
+	    if(i.eq.4) read(11,*) (ksat2(ir,ic),    ic=1,nnc)
+c		if(i.eq.5) read(11,*) (kg(ir,ic),       ic=1,nnc)
+		if(i.eq.5) read(11,*) (alpha(ir,ic),    ic=1,nnc)
+		if(i.eq.6) read(11,*) (watern(ir,ic),   ic=1,nnc)
+	  end do
+	  close(11)
+	end do ! added by gaobing 20131125
+
+
+       do ir = 1,nnr
+	     do ic = 1,nnc
+
+	     if(area(ir,ic) > 0 .and. ksat1(ir,ic) < 0) then
+	 print *, 'error in ksat1' ,ir,ic
+	     else
+c      ksat1(ir,ic) = ksat1(ir,ic)*0.001/3600.0         !mm/hr--->m/s
+      ksat1(ir,ic) = ksat1(ir,ic)*0.001/3600.0/2.4         !cm/day--->mm/hr--->m/s, mqh
+	     endif
+c	  if(area(ir,ic) > 0 .and. ksat2(ir,ic) < 0) then
+c	 print *, 'error in ksat2' ,ir,ic
+c	     else
+c	ksat2(ir,ic) = ksat2(ir,ic)*0.001/3600.0         !mm/hr--->m/s 
+c	     endif
+c        if(area(ir,ic) > 0 .and. kg(ir,ic) < 0) then
+c	 print *, 'error in kg' ,ir,ic
+c	     else
+c	kg(ir,ic)    = kg(ir,ic)*0.001/3600.0		     !mm/hr--->m/s
+c	  endif
+
+	 if(area(ir,ic) > 0 .and. wsat(ir,ic) < 0) then
+	 print *, 'error in wsat' ,ir,ic
+	 endif
+
+	if(area(ir,ic) > 0 .and. wrsd(ir,ic) < 0) then
+	 print *, 'error in wrsd' ,ir,ic
+	 endif
+
+	if(area(ir,ic) > 0 .and. alpha(ir,ic) < 0) then
+	 print *, 'error in alpha' ,ir,ic
+	 endif
+	if(area(ir,ic) > 0 .and. watern(ir,ic) < 0) then
+	 print *, 'error in watern' ,ir,ic
+	 endif
+	     enddo
+	 enddo
+
+  
+         do ir = 1,nnr
+	      do ic = 1,nnc
+	     if(area(ir,ic) > 0)  then
+	          GWcs(ir,ic)=0.15       
+!	          ksat1(ir,ic) = 0.9*ksat1(ir,ic)    
+	       ksat2(ir,ic) = 0.15*ksat1(ir,ic)  !from 0.1 to 0.15 ,mqh
+!	          ksat2(ir,ic) = 0.09*ksat1(ir,ic)  !from 0.1 to 0.15 ,mqh
+	           kg(ir,ic)    = 0.03*ksat1(ir,ic)
+
+	      else
+	          GWcs(ir,ic)=-9999           
+	          ksat2(ir,ic) = -9999 
+	           kg(ir,ic)    = -9999
+	      end if
+	      enddo
+	   enddo
+c	print *,"ksat=",ksat1(i),ksat2(i),kg(i)
+
+	suction = -1.02  ! suction, meter water-head   !*1.2,added by mqh
+       suction2 = -1.02 
+        do ir = 1,nnr
+           do ic = 1,nnc
+	     if(area(ir,ic) > 0 )  then
+c	if(wsat(ir,ic).lt. 0.48 ) wsat(ir,ic)=0.48   ! test by gaobing
+    
+      call MoistureFromSuction_V(tmp, wsat(ir,ic), wrsd(ir,ic), 
+     :                           watern(ir,ic), alpha(ir,ic), suction2)
+      wfld(ir,ic) = tmp
+	if(wfld(ir,ic).gt.wsat(ir,ic) .or. wfld(ir,ic).lt.wrsd(ir,ic))
+     :        print *,"wfld out range wrsd ~ wsat"
+             ksat2(ir,ic)= ksat2(ir,ic)*1.3
+	       kg(ir,ic)=kg(ir,ic)*2.0
+           endif
+        enddo
+	  enddo	 
+c      if(wfld(ir,ic).lt. 0.60*wsat(ir,ic))wfld(ir,ic) = 0.60*wsat(ir,ic)
+c	if(wfld(ir,ic).gt. 0.85*wsat(ir,ic))wfld(ir,ic) = 0.85*wsat(ir,ic)
+c	print *, i, isoil, wsat(i), wfld(i)
+c      i = i + 1
+c	goto 35
+c45	close(1)
+      print * ,'ok3, finish of soil_water_para', para_dir
+c	pause 
+
+
+c      print *, i-1
+    end subroutine read_soil_para
+
+    subroutine read_soil_code(para_dir)
+      use global_para_mod,only:i4,nrow,ncol
+      use hydro_data_mod,only:area
+      use soil_para_mod,only:soiltyp,nsoil,soil,soiltyp
+      implicit none
+      character*200,intent(in)::para_dir
+      integer(i4)::l1,l2,i,itmp,tmp,ir,ic,isoil,k
+      call strlen(para_dir,l1,l2)
+      open(14,file=para_dir(l1:l2)//'soil_code.txt', status='old')
+      read(14,*)
+      do i=1,nsoil
+        read(14,*) itmp, soiltyp(i), tmp
+      end do
+      close(14)
+      do ir=1,nrow
+        do ic=1,ncol
+          if(area(ir,ic).ne.-9999.and.soil(ir,ic) .ne. -9999) then
+              k=0
+              do isoil = 1, nsoil
+                if(soil(ir,ic) .eq. soiltyp(isoil)) itmp=isoil
+                if(soil(ir,ic) .eq. soiltyp(isoil)) k=k+1
+              end do
+              soil(ir,ic) = itmp
+              if(k .eq. 0) print *,'no this type of soil:', ir,ic,soil(ir,ic)
+              if(k.gt.1) print *,'more one code for this type of soil:',k, soil(ir,ic)
+            endif
+        end do
+      end do
+    end subroutine
+
+    subroutine read_map_files()
+      use global_para_mod,only:nrow,ncol,i4,area_map,ele_map,slp_map,slplen_map,soil_map,ds_map
+      use hydro_data_mod,only:area,ele,length,slp,Ds,dg
+      use soil_para_mod,only:soil
+      implicit none
+      integer(i4)::l1,l2
+      character*5:: ncols,nrows
+      character*9:: xllcorner,yllcorner
+      character*8:: cellsize
+      character*12:: nodata
+      integer(i4):: nnr, nnc,ir,ic
+      real(r8):: x0, y0
+      real(r8):: gridsize
+      real(r8):: znodata
+      
+      !read the grid_area mapfile
+      call strlen(area_map,l1,l2)
+      open(14,file=area_map(l1:l2), status='old')
+      read(14,'(A, i16)') ncols,nnc
+      read(14,'(A, i16)') nrows,nnr
+      read(14,'(A, f16.3)') xllcorner,x0
+      read(14,'(A, f16.3)') yllcorner,y0
+      read(14,'(A, f16.0)') cellsize,gridsize
+      read(14,'(A, f8.0)') nodata,znodata
+      if(nnc.ne.ncol .or. nnr.ne.nrow) then
+         print*, "The extent of file"//area_map(l1:l2)//"does not match the model extent",nnr,nnc,ncol,nrow
+         stop
+      else
+         do ir=1,nrow
+           read(14,*) (area(ir,ic),ic=1,ncol)
+         end do
+      end if
+      close(14)
+        
+      !read the elevation mapfile
+      call strlen(ele_map,l1,l2)
+      open(14,file=ele_map(l1:l2), status='old')
+      read(14,'(A, i16)') ncols,nnc
+      read(14,'(A, i16)') nrows,nnr
+      read(14,'(A, f16.3)') xllcorner,x0
+      read(14,'(A, f16.3)') yllcorner,y0
+      read(14,'(A, f16.0)') cellsize,gridsize
+      read(14,'(A, f8.0)') nodata,znodata
+      if(nnc.ne.ncol .or. nnr.ne.nrow) then
+         print*, "The extent of file"//ele_map(l1:l2)//"does not match the model extent",nnr,nnc,ncol,nrow
+         stop
+      else
+         do ir=1,nrow
+           read(14,*) (ele(ir,ic),ic=1,ncol)
+         end do
+      end if
+      close(14)
+      
+      !read the slope len mapfile
+      call strlen(slplen_map,l1,l2)
+      open(14,file=slplen_map(l1:l2), status='old')
+      read(14,'(A, i16)') ncols,nnc
+      read(14,'(A, i16)') nrows,nnr
+      read(14,'(A, f16.3)') xllcorner,x0
+      read(14,'(A, f16.3)') yllcorner,y0
+      read(14,'(A, f16.0)') cellsize,gridsize
+      read(14,'(A, f8.0)') nodata,znodata
+      if(nnc.ne.ncol .or. nnr.ne.nrow) then
+         print*, "The extent of file"//slplen_map(l1:l2)//"does not match the model extent",nnr,nnc,ncol,nrow
+         stop
+      else
+         do ir=1,nrow
+           read(14,*) (length(ir,ic),ic=1,ncol)
+         end do
+      end if
+      close(14)
+      
+      !read the slp mapfile
+      call strlen(slp_map,l1,l2)
+      open(14,file=slp_map(l1:l2), status='old')
+      read(14,'(A, i16)') ncols,nnc
+      read(14,'(A, i16)') nrows,nnr
+      read(14,'(A, f16.3)') xllcorner,x0
+      read(14,'(A, f16.3)') yllcorner,y0
+      read(14,'(A, f16.0)') cellsize,gridsize
+      read(14,'(A, f8.0)') nodata,znodata
+      if(nnc.ne.ncol .or. nnr.ne.nrow) then
+         print*, "The extent of file"//slp_map(l1:l2)//"does not match the model extent",nnr,nnc,ncol,nrow
+         stop
+      else
+         do ir=1,nrow
+           read(14,*) (slp(ir,ic),ic=1,ncol)
+         end do
+      end if
+      close(14)
+      
+      !read the soil mapfile
+      call strlen(soil_map,l1,l2)
+      open(14,file=soil_map(l1:l2), status='old')
+      read(14,'(A, i16)') ncols,nnc
+      read(14,'(A, i16)') nrows,nnr
+      read(14,'(A, f16.3)') xllcorner,x0
+      read(14,'(A, f16.3)') yllcorner,y0
+      read(14,'(A, f16.0)') cellsize,gridsize
+      read(14,'(A, f8.0)') nodata,znodata
+      if(nnc.ne.ncol .or. nnr.ne.nrow) then
+         print*, "The extent of file"//soil_map(l1:l2)//"does not match the model extent",nnr,nnc,ncol,nrow
+         stop
+      else
+         do ir=1,nrow
+           read(14,*) (soil(ir,ic),ic=1,ncol)
+         end do
+      end if
+      close(14)
+      !read the soil depth mapfile
+      call strlen(ds_map,l1,l2)
+      open(14,file=ds_map(l1:l2), status='old')
+      read(14,'(A, i16)') ncols,nnc
+      read(14,'(A, i16)') nrows,nnr
+      read(14,'(A, f16.3)') xllcorner,x0
+      read(14,'(A, f16.3)') yllcorner,y0
+      read(14,'(A, f16.0)') cellsize,gridsize
+      read(14,'(A, f8.0)') nodata,znodata
+      if(nnc.ne.ncol .or. nnr.ne.nrow) then
+         print*, "The extent of file"//ds_map(l1:l2)//"does not match the model extent",nnr,nnc,ncol,nrow
+         stop
+      else
+         do ir=1,nrow
+           read(14,*) (Ds(ir,ic),ic=1,ncol)
+         end do
+      end if
+      close(14)
+      
+      do ir=1,nnr
+        do ic=1,nnc
+          if (soil(ir,ic).eq.0) then
+            print *, 'ir,ic,soil(ir,ic)=', ir,ic,soil(ir,ic)
+          endif
+          if(area(ir,ic).eq.-9999) then
+            ele(ir,ic)=-9999
+            length(ir,ic)=-9999
+            slp(ir,ic)=-9999
+            soil(ir,ic)=-9999
+            Ds(ir,ic)=-9999
+          endif
+          if(soil(ir,ic).eq.-9999 .and. Ds(ir,ic).ne.-9999) then
+            print *, 'soil1', soil(ir,ic), Ds(ir,ic), ir, ic
+          end if
+          if(soil(ir,ic).ne.-9999 .and. Ds(ir,ic).eq.-9999) then
+            print *, 'soil2', soil(ir,ic), Ds(ir,ic), ir, ic
+          end if
+          if(area(ir,ic).ne.-9999) then
+            area(ir,ic)=area(ir,ic)*1000.0*1000.0
+          endif
+          if(slp(ir,ic) .ne. -9999) then
+            slp(ir,ic) = slp(ir,ic)/100.0
+          endif
+        end do
+      end do
+      
+      do ir=1,nnr
+        do ic=1,nnc
+            Dg(ir,ic)=-9999.0
+            if(area(ir,ic).ne.-9999.and.Ds(ir,ic).ne.-9999) then
+              Dg(ir,ic)=10.0*Ds(ir,ic)
+              if(ele(ir,ic) .ge. 3500.0) Dg(ir,ic)=amin1(2.0, Ds(ir,ic))
+              if(Dg(ir,ic) .lt. 0)  print *, "wrong in calculate Dg" 
+            endif
+        end do
+      end do
+      
+    end subroutine read_map_files
+
 
     subroutine read_river_para(para_dir)
       use hydro_data_mod,only:nflow,ngrid,dx,s0,b,roughness,dr,grid_row,grid_col,ngridmax,subbasin,nsub
@@ -97,7 +422,7 @@
             nflow,ngrid,dx,s0,b,roughness,Dr,grid_row,grid_col,Drw,q1,q2,qlin1,qlin2,qin,area_sub,&
             nhrpdt,area,ele,slp,length,ds,dg,layer,d,k0,w,kg,gwcs,cst,sst,dgl,gwst,nlayer
       use land_para_mod,only:nv,nland,NDVI,yndvi,LAI,Kcanopy,root,landtyp,land_ratio,land_use,Kcrop
-      use soil_para_mod,only:soiltyp,soil,wsat,wrsd,wfld,alpha,watern,ksat1,ksat2,anik,ns
+      use soil_para_mod,only:soiltyp,soil,wsat,wrsd,wfld,alpha,watern,ksat1,ksat2,anik,ns,nsoil
       implicit none
       character*200,intent(in)::para_dir
       integer::i,j,k,fileunit
@@ -128,6 +453,8 @@
       read(14,*) atemp,ncol
       read(14,*) atemp,nrow
       close(14)
+      
+      
       open(14, file = para_dir(l1:l2)//'vege_para.dat',status='old')
       read(14,*)
       read(14,*)
@@ -140,7 +467,22 @@
       close(14)
       subcount=subcount-1
       nland=subcount
+
+
+      open(14,file=para_dir(l1:l2)//'soil_code.txt', status='old')
+      read(14,*)
+      subcount=0
+      iostatus=1
+      do while(iostatus.ge.0)
+        read(14,*,iostat=iostatus) atmp
+        subcount=subcount+1
+      end do
+      close(14)
+      subcount=subcount-1
+      nsoil=subcount
+      ns=nsoil
       
+
       allocate(subbasin(nsub))
       allocate(psubbasin(nsub))
       allocate(pbasinup(nsub,8))

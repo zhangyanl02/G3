@@ -30,4 +30,13 @@
       character*200::para_dir    ! directory for parameters
       character*200::result2_dir ! directory for storing simulation result
       character*200::simul_dir   ! directory for storing temporal variables
+      
+      character*200::area_map     ! area of the grid (m2)
+      character*200::ele_map       ! mean elevation of the grid (m)
+      character*200::slp_map       ! mean slope of hillslope in the grid (ND)
+      character*200::slplen_map       ! mean length of hillslope in the grid (m)
+      character*200::soil_map      ! soil type of the grid (ND)
+      !character*200 landuse_map   ! land use type of the grid (ND)
+      character*200 ::ds_map   ! depth of the topsoil (m)
+      
     end module global_para_mod

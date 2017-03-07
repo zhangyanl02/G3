@@ -7,7 +7,8 @@
       use land_para_mod,only:landtyp,land_ratio,land_use,nland,NDVI,yndvi,LAI,Kcanopy,LAImax,Kcrop,&
                               root,nv
       use global_para_mod,only:i4,r8,dt,year,month,day,hour,dayinmonth,hydroyear,startmonth,endmonth,startday,endday,&
-                              idc,ihc,start,finish,start_sub,end_sub,nrow,ncol,startyear,endyear,iflai
+                              idc,ihc,start,finish,start_sub,end_sub,nrow,ncol,startyear,endyear,iflai,area_map,ele_map,&
+                              slp_map,slplen_map,soil_map,ds_map
       use GBHM3Lib_mod
       implicit none
       integer(i4)::isub,iflow,isoil,iland,year_tmp
@@ -16,12 +17,6 @@
       
 !     Parameter file & Input file
       character*100::grid_area     ! area of the grid (m2)
-      character*100::top_ele       ! mean elevation of the grid (m)
-      character*100::top_slp       ! mean slope of hillslope in the grid (ND)
-      character*100::top_len       ! mean length of hillslope in the grid (m)
-      character*100::soil_map      ! soil type of the grid (ND)
-      !character*200 landuse_map   ! land use type of the grid (ND)
-      character*100 ::geology_map   ! depth of the topsoil (m)
       integer(i4):: im             !,iy, id, ih ! for year, month, day and hour loop
 
 
@@ -35,14 +30,7 @@
       character*200::  ndvi_dir,lai_dir ! added by gaobing 20131204
       character*200::  soil_dir  !! added by mqh 
       character*200::  infile
-      character*5:: ncols,nrows
-      character*9:: xllcorner,yllcorner
-      character*8:: cellsize
-      character*12:: nodata
-      integer(i4):: nnr, nnc
-      real(r8):: x0, y0
-      real(r8):: gridsize
-      real(r8):: znodata
+
       !common / asc / ncols,nrows,xllcorner,yllcorner,cellsize,nodata, nnr, nnc, x0, y0, gridsize,znodata
       
       character*2::    ch2, a2    ! a 2-character variable
@@ -68,16 +56,19 @@
       soil_dir ="../data/soil/"  !mqh
       lai_dir = "../lai/"
       dt=3600.0   ! time step of hydrological simulation, unit: second
-      grid_area   = "cell_area.asc"
-      top_ele     = "elevation.asc"
-      top_len     = "slope_length.asc"
-      top_slp     = "slope.asc"
+      area_map   = "cell_area.asc"
+      ele_map     = "elevation.asc"
+      slplen_map     = "slope_length.asc"
+      slp_map     = "slope.asc"
       soil_map    = "soil_unit.asc"
-      geology_map = "soil_depth.asc"
+      ds_map = "soil_depth.asc"
       
       call initial_subcatchment(para_dir)       !allocate memory for the variables before used
       call read_hydro_para(para_dir,nhrpdt)
       call read_veg_para(para_dir)
+      call read_map_files()
+      call read_soil_code(para_dir)
+      call read_soil_para()
       
       start_sub = 1
       end_sub   = 153
