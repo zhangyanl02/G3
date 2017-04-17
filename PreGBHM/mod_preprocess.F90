@@ -66,7 +66,7 @@
           call system("rm ADJOutlet.prj")
           call system("rm ADJOutlet.dbf")
         end if         
-        call system("mpiexec -n "//cpus//" moveoutletstostrm -p flowdir1km.tif -src stream1km.tif -o "&
+        call system("mpiexec -n "//cpus//" moveoutletstostreams -p flowdir1km.tif -src stream1km.tif -o "&
             //Outlet//" -om ADJOutlet.shp")
 
         inquire(file='acc2_1km.tif', exist=file_e)
