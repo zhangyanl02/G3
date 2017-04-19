@@ -55,12 +55,13 @@
       call strlen(hydro_para_dir,d1,d2) 
       inquire(file=trim(hydro_para_dir(d1:d2))//'/riverpara',exist=paradir)
 
-      if(.not. paradir) then
-         call system("mkdir "//trim(hydro_para_dir(d1:d2))//"/riverpara")
-      else
-         call system("rm "//trim(hydro_para_dir(d1:d2))//'/riverpara/'//"*")
+
+      if(paradir) then
+         call system("rm -r "//trim(hydro_para_dir(d1:d2))//'/riverpara/')
+		 print*,"rm -r"//trim(hydro_para_dir(d1:d2))//'/riverpara/'
       end if
-      
+      call system("mkdir "//trim(hydro_para_dir(d1:d2))//"/riverpara")
+	  
       if(river_parameter_only.eq.0) then
         call TauDem()
         call priver_horton()
