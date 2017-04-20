@@ -1,3 +1,5 @@
+#@  Developed by Dr. Yanlin Zhang,Hunan University of Science and Technology, Xiangtan, Hunan province,411201
+#@  Apr 2017
   module mod_preprocess
         character*(200)::midfileformat,hydro_para_dir,subcatchment2file
         character*(200)::model_para_dir,DEM1km,FinerDEM,Outlet,ThresHold,lufine,cpus,skyviewfile

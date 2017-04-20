@@ -1,3 +1,6 @@
+#@  Developed by Dr. Yanlin Zhang,Hunan University of Science and Technology, Xiangtan, Hunan province,411201
+#@  Apr 2017
+
       program PreGBHM
       use gisutil
       use mod_preprocess
