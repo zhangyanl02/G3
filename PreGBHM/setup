@@ -1,7 +1,7 @@
 &Dir_and_files
-      model_para_dir='./model_para/'
+    model_para_dir='./model_para/'
 	DEM1km = './input/BBH1km.tif'
-	FinerDEM = './input/BBH100.tif'
+	FinerDEM = './input/dem90.tif'
 	Outlet='./input/outlet.shp'
 	subcatchment2file='./input/subcatchment2.dat'
 	midfileformat='.asc'
